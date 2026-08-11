@@ -35,6 +35,13 @@ export default function Profile() {
       <h1 style={{ fontSize: 22, marginBottom: 12 }}>Your profile</h1>
       <p style={{ color: "var(--muted)", marginBottom: 24 }}>{email}</p>
       <ErrorBanner message={error} />
+      <button
+        className="btn-secondary"
+        style={{ marginBottom: 12 }}
+        onClick={() => navigate("/profile/edit")}
+      >
+        Edit profile
+      </button>
       <button className="btn-secondary" onClick={handleSignOut}>Sign out</button>
     </div>
   );

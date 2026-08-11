@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, User } from "lucide-react";
+import { Plus, User, ClipboardList } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ActivityCard from "../components/ActivityCard.jsx";
 import ErrorBanner from "../components/ErrorBanner.jsx";
@@ -39,6 +39,13 @@ export default function Feed() {
             onClick={() => navigate("/post")}
           >
             <Plus size={16} />
+          </button>
+          <button
+            className="btn-secondary"
+            style={{ width: "auto", padding: 10 }}
+            onClick={() => navigate("/my-activities")}
+          >
+            <ClipboardList size={16} />
           </button>
           <button
             className="btn-secondary"
