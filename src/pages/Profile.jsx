@@ -2,18 +2,25 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
+import ErrorBanner from "../components/ErrorBanner.jsx";
 
 export default function Profile() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email || ""));
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (error) setError(error.message);
+      else setEmail(data.user?.email || "");
+    });
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/login");
+    setError("");
+    const { error } = await supabase.auth.signOut();
+    if (error) setError(error.message);
+    else navigate("/login");
   };
 
   return (
@@ -27,6 +34,7 @@ export default function Profile() {
       </button>
       <h1 style={{ fontSize: 22, marginBottom: 12 }}>Your profile</h1>
       <p style={{ color: "var(--muted)", marginBottom: 24 }}>{email}</p>
+      <ErrorBanner message={error} />
       <button className="btn-secondary" onClick={handleSignOut}>Sign out</button>
     </div>
   );

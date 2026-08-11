@@ -2,29 +2,52 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
+import ErrorBanner from "../components/ErrorBanner.jsx";
 
 export default function ActivityDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activity, setActivity] = useState(null);
+  const [loadError, setLoadError] = useState("");
   const [requested, setRequested] = useState(false);
+  const [requestError, setRequestError] = useState("");
+  const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("activities").select("*").eq("id", id).single();
-      setActivity(data);
+      try {
+        const { data, error } = await supabase.from("activities").select("*").eq("id", id).single();
+        if (error) setLoadError(error.message);
+        else setActivity(data);
+      } catch (err) {
+        setLoadError(err.message || "Couldn't load this activity. Please try again.");
+      }
     })();
   }, [id]);
 
   const handleRequest = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("requests").insert({
-      activity_id: id,
-      traveller_id: userData.user.id,
-    });
-    if (!error) setRequested(true);
+    setRequestError("");
+    setRequesting(true);
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        setRequestError(userError.message);
+        return;
+      }
+      const { error } = await supabase.from("requests").insert({
+        activity_id: id,
+        traveller_id: userData.user.id,
+      });
+      if (error) setRequestError(error.message);
+      else setRequested(true);
+    } catch (err) {
+      setRequestError(err.message || "Couldn't send your request. Please try again.");
+    } finally {
+      setRequesting(false);
+    }
   };
 
+  if (loadError) return <div style={{ padding: 24 }}><ErrorBanner message={loadError} /></div>;
   if (!activity) return <div style={{ padding: 24 }}>Loading…</div>;
 
   return (
@@ -46,13 +69,14 @@ export default function ActivityDetail() {
         <p><strong>Fee:</strong> {activity.fee ? `£${activity.fee}` : "Free"}</p>
       </div>
 
+      <ErrorBanner message={requestError} />
       {requested ? (
         <p style={{ color: "var(--moss)", fontWeight: 600 }}>
           Request sent — you'll be notified when the host responds.
         </p>
       ) : (
-        <button className="btn-primary" onClick={handleRequest}>
-          Request to join
+        <button className="btn-primary" onClick={handleRequest} disabled={requesting}>
+          {requesting ? "Sending…" : "Request to join"}
         </button>
       )}
     </div>

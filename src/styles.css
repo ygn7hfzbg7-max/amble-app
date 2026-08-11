@@ -77,3 +77,13 @@ input, textarea, select {
   font-family: "Karla", sans-serif;
   margin-bottom: 14px;
 }
+
+.error-banner {
+  color: var(--brick);
+  background: rgba(184, 75, 44, 0.08);
+  border: 1px solid var(--brick);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
