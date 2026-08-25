@@ -8,7 +8,8 @@ import ActivityRequests from "./pages/ActivityRequests.jsx";
 import PostActivity from "./pages/PostActivity.jsx";
 import Profile from "./pages/Profile.jsx";
 import EditProfile from "./pages/EditProfile.jsx";
-import MyActivities from "./pages/MyActivities.jsx";
+import MyPlans from "./pages/MyPlans.jsx";
+import PendingRequests from "./pages/PendingRequests.jsx";
 
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = loading
@@ -54,8 +55,12 @@ export default function App() {
             element={session ? <PostActivity /> : <Navigate to="/login" />}
           />
           <Route
-            path="/my-activities"
-            element={session ? <MyActivities /> : <Navigate to="/login" />}
+            path="/my-plans"
+            element={session ? <MyPlans /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/my-plans/requests"
+            element={session ? <PendingRequests /> : <Navigate to="/login" />}
           />
           <Route
             path="/profile"

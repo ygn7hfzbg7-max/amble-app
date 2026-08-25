@@ -43,7 +43,7 @@ export default function Feed() {
           <button
             className="btn-secondary"
             style={{ width: "auto", padding: 10 }}
-            onClick={() => navigate("/my-activities")}
+            onClick={() => navigate("/my-plans")}
           >
             <ClipboardList size={16} />
           </button>
