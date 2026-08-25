@@ -1,22 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, User } from "lucide-react";
+import { Plus, User, ClipboardList } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ActivityCard from "../components/ActivityCard.jsx";
+import ErrorBanner from "../components/ErrorBanner.jsx";
 
 export default function Feed() {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from("activities")
-        .select("*")
-        .order("starts_at", { ascending: true });
-      if (!error) setActivities(data || []);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from("activities")
+          .select("*")
+          .order("starts_at", { ascending: true });
+        if (error) setError(error.message);
+        else setActivities(data || []);
+      } catch (err) {
+        setError(err.message || "Couldn't load activities. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
@@ -35,6 +43,13 @@ export default function Feed() {
           <button
             className="btn-secondary"
             style={{ width: "auto", padding: 10 }}
+            onClick={() => navigate("/my-activities")}
+          >
+            <ClipboardList size={16} />
+          </button>
+          <button
+            className="btn-secondary"
+            style={{ width: "auto", padding: 10 }}
             onClick={() => navigate("/profile")}
           >
             <User size={16} />
@@ -42,8 +57,9 @@ export default function Feed() {
         </div>
       </div>
 
+      <ErrorBanner message={error} />
       {loading && <p>Loading activities…</p>}
-      {!loading && activities.length === 0 && (
+      {!loading && !error && activities.length === 0 && (
         <p style={{ color: "var(--muted)" }}>
           No activities yet — be the first to post one.
         </p>

@@ -1,17 +1,26 @@
 import React, { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import ErrorBanner from "../components/ErrorBanner.jsx";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    if (error) setError(error.message);
-    else setSent(true);
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (error) setError(error.message);
+      else setSent(true);
+    } catch (err) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -32,13 +41,9 @@ export default function Login() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          {error && (
-            <p style={{ color: "var(--brick)", fontSize: 13, marginBottom: 12 }}>
-              {error}
-            </p>
-          )}
-          <button className="btn-primary" type="submit">
-            Send login link
+          <ErrorBanner message={error} />
+          <button className="btn-primary" type="submit" disabled={submitting}>
+            {submitting ? "Sending…" : "Send login link"}
           </button>
         </form>
       )}

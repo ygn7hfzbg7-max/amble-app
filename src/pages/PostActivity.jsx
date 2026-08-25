@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
+import ErrorBanner from "../components/ErrorBanner.jsx";
 
 export default function PostActivity() {
   const navigate = useNavigate();
@@ -14,18 +15,33 @@ export default function PostActivity() {
     spots_total: 2,
     fee: 0,
   });
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const update = (key) => (e) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { data: userData } = await supabase.auth.getUser();
-    const { error } = await supabase.from("activities").insert({
-      ...form,
-      host_id: userData.user.id,
-    });
-    if (!error) navigate("/");
+    setError("");
+    setSubmitting(true);
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        setError(userError.message);
+        return;
+      }
+      const { error } = await supabase.from("activities").insert({
+        ...form,
+        host_id: userData.user.id,
+      });
+      if (error) setError(error.message);
+      else navigate("/");
+    } catch (err) {
+      setError(err.message || "Couldn't post this activity. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -61,7 +77,10 @@ export default function PostActivity() {
         <label className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>Fee (£, 0 = free)</label>
         <input type="number" min={0} max={20} value={form.fee} onChange={update("fee")} />
 
-        <button className="btn-primary" type="submit">Post activity</button>
+        <ErrorBanner message={error} />
+        <button className="btn-primary" type="submit" disabled={submitting}>
+          {submitting ? "Posting…" : "Post activity"}
+        </button>
       </form>
     </div>
   );
