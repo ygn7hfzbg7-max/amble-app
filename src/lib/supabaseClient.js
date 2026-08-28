@@ -46,7 +46,7 @@ export async function ensureProfile(user) {
     id            uuid primary key default gen_random_uuid()
     activity_id   uuid references activities.id
     traveller_id  uuid references profiles.id
-    status        text default 'pending'   -- pending | accepted | declined
+    status        text default 'pending'   -- pending | accepted | declined | waitlisted
     created_at    timestamptz default now()
 
   reviews

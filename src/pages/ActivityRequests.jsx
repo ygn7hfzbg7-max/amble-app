@@ -8,12 +8,23 @@ const STATUS_LABEL = {
   pending: "Pending",
   accepted: "Confirmed",
   declined: "Declined",
+  waitlisted: "Waitlisted",
 };
 
 const STATUS_COLOR = {
   pending: "var(--muted)",
   accepted: "var(--moss)",
   declined: "var(--brick)",
+  waitlisted: "var(--gold)",
+};
+
+const SECTION_HEADING_STYLE = {
+  fontSize: 14,
+  textTransform: "uppercase",
+  letterSpacing: 1,
+  color: "var(--muted)",
+  marginBottom: 10,
+  marginTop: 8,
 };
 
 export default function ActivityRequests() {
@@ -89,6 +100,79 @@ export default function ActivityRequests() {
   if (loading) return <div style={{ padding: 24 }}>Loading…</div>;
   if (error && !activity) return <div style={{ padding: 24 }}><ErrorBanner message={error} /></div>;
 
+  const pendingRequests = requests.filter((r) => r.status === "pending");
+  const waitlistedRequests = requests.filter((r) => r.status === "waitlisted");
+  const otherRequests = requests.filter((r) => r.status === "accepted" || r.status === "declined");
+
+  const acceptedCount = requests.filter((r) => r.status === "accepted").length;
+  const spotsFree = activity.spots_total - acceptedCount;
+
+  const renderRequest = (r, { showAccept, showDecline, showRemove } = {}) => {
+    const profile = r.profiles || {};
+    const name = profile.display_name || profile.email || "Someone";
+    return (
+      <div key={r.id} className="card">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+          <h3 style={{ fontSize: 16 }}>{name}</h3>
+          <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: STATUS_COLOR[r.status] || "var(--muted)" }}>
+            {STATUS_LABEL[r.status] || r.status}
+          </span>
+        </div>
+        {profile.city && (
+          <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 4 }}>{profile.city}</p>
+        )}
+        {profile.bio && (
+          <p style={{ fontSize: 14, marginBottom: 12 }}>{profile.bio}</p>
+        )}
+        {r.status === "accepted" && (
+          <p style={{ color: "var(--moss)", fontSize: 13, marginBottom: 12 }}>
+            Confirmed for {new Date(activity.starts_at).toLocaleString()} at {activity.meet_point}.
+          </p>
+        )}
+        {r.status === "waitlisted" && spotsFree > 0 && (
+          <p className="mono" style={{ color: "var(--gold)", fontSize: 12, marginBottom: 12 }}>
+            A spot is open — you can accept them now.
+          </p>
+        )}
+        {(showAccept || showDecline || showRemove) && (
+          <div style={{ display: "flex", gap: 10 }}>
+            {showAccept && (
+              <button
+                className="btn-primary"
+                style={{ width: "auto", padding: "10px 18px" }}
+                disabled={actioningId === r.id || spotsFree <= 0}
+                title={spotsFree <= 0 ? "No spots open right now" : undefined}
+                onClick={() => respond(r.id, "accepted")}
+              >
+                Accept
+              </button>
+            )}
+            {showDecline && (
+              <button
+                className="btn-secondary"
+                style={{ width: "auto", padding: "10px 18px" }}
+                disabled={actioningId === r.id}
+                onClick={() => respond(r.id, "declined")}
+              >
+                Decline
+              </button>
+            )}
+            {showRemove && (
+              <button
+                className="btn-secondary"
+                style={{ width: "auto", padding: "10px 18px", borderColor: "var(--brick)", color: "var(--brick)" }}
+                disabled={actioningId === r.id}
+                onClick={() => respond(r.id, "declined")}
+              >
+                Remove
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div style={{ padding: "24px 20px" }}>
       <button
@@ -103,6 +187,7 @@ export default function ActivityRequests() {
       <div className="card" style={{ marginBottom: 20 }}>
         <p><strong>When:</strong> {new Date(activity.starts_at).toLocaleString()}</p>
         <p><strong>Meet at:</strong> {activity.meet_point}</p>
+        <p><strong>Spots:</strong> {acceptedCount}/{activity.spots_total} confirmed</p>
       </div>
 
       <ErrorBanner message={error} />
@@ -111,51 +196,16 @@ export default function ActivityRequests() {
         <p style={{ color: "var(--muted)" }}>No one has requested to join yet.</p>
       )}
 
-      {requests.map((r) => {
-        const profile = r.profiles || {};
-        const name = profile.display_name || profile.email || "Someone";
-        return (
-          <div key={r.id} className="card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-              <h3 style={{ fontSize: 16 }}>{name}</h3>
-              <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: STATUS_COLOR[r.status] || "var(--muted)" }}>
-                {STATUS_LABEL[r.status] || r.status}
-              </span>
-            </div>
-            {profile.city && (
-              <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 4 }}>{profile.city}</p>
-            )}
-            {profile.bio && (
-              <p style={{ fontSize: 14, marginBottom: 12 }}>{profile.bio}</p>
-            )}
-            {r.status === "accepted" && (
-              <p style={{ color: "var(--moss)", fontSize: 13, marginBottom: 12 }}>
-                Confirmed for {new Date(activity.starts_at).toLocaleString()} at {activity.meet_point}.
-              </p>
-            )}
-            {r.status === "pending" && (
-              <div style={{ display: "flex", gap: 10 }}>
-                <button
-                  className="btn-primary"
-                  style={{ width: "auto", padding: "10px 18px" }}
-                  disabled={actioningId === r.id}
-                  onClick={() => respond(r.id, "accepted")}
-                >
-                  Accept
-                </button>
-                <button
-                  className="btn-secondary"
-                  style={{ width: "auto", padding: "10px 18px" }}
-                  disabled={actioningId === r.id}
-                  onClick={() => respond(r.id, "declined")}
-                >
-                  Decline
-                </button>
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {pendingRequests.map((r) => renderRequest(r, { showAccept: true, showDecline: true }))}
+
+      {waitlistedRequests.length > 0 && (
+        <>
+          <h2 className="mono" style={SECTION_HEADING_STYLE}>Waitlist</h2>
+          {waitlistedRequests.map((r) => renderRequest(r, { showAccept: true, showDecline: true }))}
+        </>
+      )}
+
+      {otherRequests.map((r) => renderRequest(r, { showRemove: r.status === "accepted" }))}
     </div>
   );
 }

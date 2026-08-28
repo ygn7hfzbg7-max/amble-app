@@ -8,6 +8,7 @@ export default function ActivityDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activity, setActivity] = useState(null);
+  const [acceptedCount, setAcceptedCount] = useState(0);
   const [loadError, setLoadError] = useState("");
   const [userId, setUserId] = useState(null);
   const [myRequestStatus, setMyRequestStatus] = useState(null);
@@ -31,6 +32,17 @@ export default function ActivityDetail() {
         }
         setActivity(data);
 
+        const { data: acceptedRequests, error: acceptedError } = await supabase
+          .from("requests")
+          .select("id")
+          .eq("activity_id", id)
+          .eq("status", "accepted");
+        if (acceptedError) {
+          setLoadError(acceptedError.message);
+          return;
+        }
+        setAcceptedCount((acceptedRequests || []).length);
+
         if (data.host_id !== userData.user.id) {
           const { data: myRequest, error: myRequestError } = await supabase
             .from("requests")
@@ -47,16 +59,20 @@ export default function ActivityDetail() {
     })();
   }, [id]);
 
+  const isFull = activity ? acceptedCount >= activity.spots_total : false;
+
   const handleRequest = async () => {
     setRequestError("");
     setRequesting(true);
     try {
+      const status = isFull ? "waitlisted" : "pending";
       const { error } = await supabase.from("requests").insert({
         activity_id: id,
         traveller_id: userId,
+        status,
       });
       if (error) setRequestError(error.message);
-      else setMyRequestStatus("pending");
+      else setMyRequestStatus(status);
     } catch (err) {
       setRequestError(err.message || "Couldn't send your request. Please try again.");
     } finally {
@@ -86,6 +102,14 @@ export default function ActivityDetail() {
         <p><strong>When:</strong> {new Date(activity.starts_at).toLocaleString()}</p>
         <p><strong>Meet at:</strong> {activity.meet_point}</p>
         <p><strong>Fee:</strong> {activity.fee ? `£${activity.fee}` : "Free"}</p>
+        <p>
+          <strong>Spots:</strong>{" "}
+          {isFull ? (
+            <span style={{ color: "var(--brick)", fontWeight: 600 }}>Full</span>
+          ) : (
+            `${activity.spots_total - acceptedCount} of ${activity.spots_total} left`
+          )}
+        </p>
       </div>
 
       {isHost && (
@@ -108,6 +132,11 @@ export default function ActivityDetail() {
               Request sent — you'll be notified when the host responds.
             </p>
           )}
+          {myRequestStatus === "waitlisted" && (
+            <p style={{ color: "var(--gold)", fontWeight: 600 }}>
+              You're on the waitlist — we'll let you know if a spot opens up.
+            </p>
+          )}
           {myRequestStatus === "declined" && (
             <p style={{ color: "var(--muted)" }}>
               The host declined your request to join this one.
@@ -115,7 +144,7 @@ export default function ActivityDetail() {
           )}
           {myRequestStatus === null && (
             <button className="btn-primary" onClick={handleRequest} disabled={requesting}>
-              {requesting ? "Sending…" : "Request to join"}
+              {requesting ? "Sending…" : isFull ? "Join waitlist" : "Request to join"}
             </button>
           )}
         </>

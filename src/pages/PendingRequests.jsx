@@ -4,9 +4,19 @@ import { ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 
+const SECTION_HEADING_STYLE = {
+  fontSize: 14,
+  textTransform: "uppercase",
+  letterSpacing: 1,
+  color: "var(--muted)",
+  marginBottom: 10,
+  marginTop: 8,
+};
+
 export default function PendingRequests() {
   const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
+  const [acceptedCounts, setAcceptedCounts] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actioningId, setActioningId] = useState(null);
@@ -35,11 +45,26 @@ export default function PendingRequests() {
           return;
         }
 
+        const { data: acceptedRequests, error: acceptedError } = await supabase
+          .from("requests")
+          .select("activity_id")
+          .in("activity_id", hostedIds)
+          .eq("status", "accepted");
+        if (acceptedError) {
+          setError(acceptedError.message);
+          return;
+        }
+        const counts = {};
+        for (const r of acceptedRequests || []) {
+          counts[r.activity_id] = (counts[r.activity_id] || 0) + 1;
+        }
+        setAcceptedCounts(counts);
+
         const { data, error: requestsError } = await supabase
           .from("requests")
-          .select("*, profiles(display_name, email, city, bio), activities(title, starts_at, meet_point)")
+          .select("*, profiles(display_name, email, city, bio), activities(title, starts_at, meet_point, spots_total)")
           .in("activity_id", hostedIds)
-          .eq("status", "pending")
+          .in("status", ["pending", "waitlisted"])
           .order("created_at", { ascending: true });
         if (requestsError) setError(requestsError.message);
         else setRequests(data || []);
@@ -51,24 +76,80 @@ export default function PendingRequests() {
     })();
   }, []);
 
-  const respond = async (requestId, status) => {
+  const respond = async (request, status) => {
     setError("");
-    setActioningId(requestId);
+    setActioningId(request.id);
     try {
       const { error } = await supabase
         .from("requests")
         .update({ status })
-        .eq("id", requestId);
+        .eq("id", request.id);
       if (error) {
         setError(error.message);
         return;
       }
-      setRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setRequests((prev) => prev.filter((r) => r.id !== request.id));
+      if (status === "accepted") {
+        setAcceptedCounts((prev) => ({
+          ...prev,
+          [request.activity_id]: (prev[request.activity_id] || 0) + 1,
+        }));
+      }
     } catch (err) {
       setError(err.message || "Couldn't update this request. Please try again.");
     } finally {
       setActioningId(null);
     }
+  };
+
+  const pendingRequests = requests.filter((r) => r.status === "pending");
+  const waitlistedRequests = requests.filter((r) => r.status === "waitlisted");
+
+  const renderRequest = (r) => {
+    const profile = r.profiles || {};
+    const activity = r.activities || {};
+    const name = profile.display_name || profile.email || "Someone";
+    const spotsFree = activity.spots_total != null
+      ? activity.spots_total - (acceptedCounts[r.activity_id] || 0)
+      : null;
+    return (
+      <div key={r.id} className="card">
+        <div style={{ marginBottom: 8 }}>
+          <h3 style={{ fontSize: 16, marginBottom: 2 }}>{name}</h3>
+          <p className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>
+            wants to join "{activity.title}" · {new Date(activity.starts_at).toLocaleString()}
+          </p>
+        </div>
+        {profile.city && (
+          <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 4 }}>{profile.city}</p>
+        )}
+        {profile.bio && <p style={{ fontSize: 14, marginBottom: 12 }}>{profile.bio}</p>}
+        {r.status === "waitlisted" && spotsFree > 0 && (
+          <p className="mono" style={{ color: "var(--gold)", fontSize: 12, marginBottom: 12 }}>
+            A spot is open — you can accept them now.
+          </p>
+        )}
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            className="btn-primary"
+            style={{ width: "auto", padding: "10px 18px" }}
+            disabled={actioningId === r.id || spotsFree <= 0}
+            title={spotsFree <= 0 ? "No spots open right now" : undefined}
+            onClick={() => respond(r, "accepted")}
+          >
+            Accept
+          </button>
+          <button
+            className="btn-secondary"
+            style={{ width: "auto", padding: "10px 18px" }}
+            disabled={actioningId === r.id}
+            onClick={() => respond(r, "declined")}
+          >
+            Decline
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -89,43 +170,14 @@ export default function PendingRequests() {
         <p style={{ color: "var(--muted)" }}>No pending requests right now.</p>
       )}
 
-      {requests.map((r) => {
-        const profile = r.profiles || {};
-        const activity = r.activities || {};
-        const name = profile.display_name || profile.email || "Someone";
-        return (
-          <div key={r.id} className="card">
-            <div style={{ marginBottom: 8 }}>
-              <h3 style={{ fontSize: 16, marginBottom: 2 }}>{name}</h3>
-              <p className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>
-                wants to join "{activity.title}" · {new Date(activity.starts_at).toLocaleString()}
-              </p>
-            </div>
-            {profile.city && (
-              <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 4 }}>{profile.city}</p>
-            )}
-            {profile.bio && <p style={{ fontSize: 14, marginBottom: 12 }}>{profile.bio}</p>}
-            <div style={{ display: "flex", gap: 10 }}>
-              <button
-                className="btn-primary"
-                style={{ width: "auto", padding: "10px 18px" }}
-                disabled={actioningId === r.id}
-                onClick={() => respond(r.id, "accepted")}
-              >
-                Accept
-              </button>
-              <button
-                className="btn-secondary"
-                style={{ width: "auto", padding: "10px 18px" }}
-                disabled={actioningId === r.id}
-                onClick={() => respond(r.id, "declined")}
-              >
-                Decline
-              </button>
-            </div>
-          </div>
-        );
-      })}
+      {pendingRequests.map(renderRequest)}
+
+      {waitlistedRequests.length > 0 && (
+        <>
+          <h2 className="mono" style={SECTION_HEADING_STYLE}>Waitlist</h2>
+          {waitlistedRequests.map(renderRequest)}
+        </>
+      )}
     </div>
   );
 }

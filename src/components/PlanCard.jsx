@@ -8,12 +8,14 @@ const STATUS_LABEL = {
   pending: "Pending",
   accepted: "Confirmed",
   declined: "Declined",
+  waitlisted: "Waitlisted",
 };
 
 const STATUS_COLOR = {
   pending: "var(--muted)",
   accepted: "var(--moss)",
   declined: "var(--brick)",
+  waitlisted: "var(--gold)",
 };
 
 export default function PlanCard({ plan }) {
