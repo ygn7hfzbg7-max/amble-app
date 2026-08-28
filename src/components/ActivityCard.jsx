@@ -1,10 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Mountain, UtensilsCrossed, Footprints, Clock } from "lucide-react";
+import { Mountain, UtensilsCrossed, Footprints, Clock, Users } from "lucide-react";
 
 const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
-export default function ActivityCard({ activity }) {
+export default function ActivityCard({ activity, spotsLeft }) {
   const navigate = useNavigate();
   const Icon = TYPE_ICON[activity.type] || Footprints;
 
@@ -21,10 +21,16 @@ export default function ActivityCard({ activity }) {
         </span>
       </div>
       <h3 style={{ fontSize: 16, marginBottom: 6 }}>{activity.title}</h3>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12, marginBottom: spotsLeft != null ? 4 : 0 }}>
         <Clock size={12} />
         {new Date(activity.starts_at).toLocaleString()}
       </div>
+      {spotsLeft != null && (
+        <div className="mono" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12 }}>
+          <Users size={12} />
+          {spotsLeft} of {activity.spots_total} spots left
+        </div>
+      )}
     </div>
   );
 }

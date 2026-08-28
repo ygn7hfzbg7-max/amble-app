@@ -14,12 +14,47 @@ export default function Feed() {
   useEffect(() => {
     (async () => {
       try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError) {
+          setError(userError.message);
+          return;
+        }
+        const userId = userData.user.id;
+
         const { data, error } = await supabase
           .from("activities")
           .select("*")
+          .gte("starts_at", new Date().toISOString())
+          .neq("host_id", userId)
           .order("starts_at", { ascending: true });
-        if (error) setError(error.message);
-        else setActivities(data || []);
+        if (error) {
+          setError(error.message);
+          return;
+        }
+
+        const upcoming = data || [];
+        const ids = upcoming.map((a) => a.id);
+        const acceptedCounts = {};
+        if (ids.length > 0) {
+          const { data: accepted, error: acceptedError } = await supabase
+            .from("requests")
+            .select("activity_id")
+            .in("activity_id", ids)
+            .eq("status", "accepted");
+          if (acceptedError) {
+            setError(acceptedError.message);
+            return;
+          }
+          for (const r of accepted || []) {
+            acceptedCounts[r.activity_id] = (acceptedCounts[r.activity_id] || 0) + 1;
+          }
+        }
+
+        const joinable = upcoming
+          .map((a) => ({ ...a, spotsTaken: acceptedCounts[a.id] || 0 }))
+          .filter((a) => a.spotsTaken < a.spots_total);
+
+        setActivities(joinable);
       } catch (err) {
         setError(err.message || "Couldn't load activities. Please try again.");
       } finally {
@@ -60,12 +95,17 @@ export default function Feed() {
       <ErrorBanner message={error} />
       {loading && <p>Loading activities…</p>}
       {!loading && !error && activities.length === 0 && (
-        <p style={{ color: "var(--muted)" }}>
-          No activities yet — be the first to post one.
-        </p>
+        <div style={{ textAlign: "center", padding: "40px 0" }}>
+          <p style={{ color: "var(--muted)", marginBottom: 20 }}>
+            No upcoming activities yet — be the first to get something going.
+          </p>
+          <button className="btn-primary" onClick={() => navigate("/post")}>
+            Post an activity
+          </button>
+        </div>
       )}
       {activities.map((a) => (
-        <ActivityCard key={a.id} activity={a} />
+        <ActivityCard key={a.id} activity={a} spotsLeft={a.spots_total - a.spotsTaken} />
       ))}
     </div>
   );
