@@ -11,9 +11,12 @@ and the review flow from the design prototype still need to be wired in.
 - `src/pages/PostActivity.jsx` — locals post an activity
 - `src/pages/ActivityDetail.jsx` — view an activity, request to join (travellers),
   or jump to the requests list (hosts); shows the confirmed match once accepted
-- `src/pages/MyActivities.jsx` — activities you've posted, with a pending-request badge
-- `src/pages/ActivityRequests.jsx` — host view: see who requested to join,
-  their profile info, and accept/decline
+- `src/pages/MyPlans.jsx` — unified chronological view of everything you're
+  hosting or have requested to join, with a banner for pending join requests
+- `src/pages/PendingRequests.jsx` — accept/decline every pending join
+  request across all the activities you host, in one place
+- `src/pages/ActivityRequests.jsx` — host view: see who requested to join
+  a single activity, their profile info, and accept/decline
 - `src/pages/Profile.jsx` — profile + sign out
 - `src/pages/EditProfile.jsx` — set display name, city, and bio
 - `src/lib/supabaseClient.js` — Supabase setup + suggested table schema (as SQL comments)
