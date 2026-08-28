@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, User, ClipboardList } from "lucide-react";
+import { Plus, User, ClipboardList, Calendar, X } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ActivityCard from "../components/ActivityCard.jsx";
 import ErrorBanner from "../components/ErrorBanner.jsx";
@@ -30,6 +30,13 @@ function toDateInputValue(date) {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatPillDate(dateStr) {
+  const d = startOfDay(dateStr);
+  const weekday = d.toLocaleDateString(undefined, { weekday: "short" });
+  const month = d.toLocaleDateString(undefined, { month: "short" });
+  return `${weekday} ${d.getDate()} ${month}`;
 }
 
 function dateRangeFor(filter, customDate) {
@@ -175,28 +182,86 @@ export default function Feed() {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "nowrap",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 20,
+          overflowX: "auto",
+          paddingBottom: 4,
+        }}
+      >
         {DATE_CHIPS.map((c) => (
           <button
             key={c.key}
             className="mono"
             onClick={() => selectChip(c.key)}
-            style={chipStyle(dateFilter === c.key)}
+            style={{ ...chipStyle(dateFilter === c.key), flexShrink: 0 }}
           >
             {c.label}
           </button>
         ))}
-        <input
-          type="date"
-          className="mono"
-          value={customDate}
-          min={toDateInputValue(new Date())}
-          onChange={(e) => {
-            setCustomDate(e.target.value);
-            setDateFilter(e.target.value ? "custom" : "all");
-          }}
-          style={{ ...chipStyle(dateFilter === "custom"), width: "auto", marginBottom: 0 }}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          <label
+            className="mono"
+            style={{
+              ...chipStyle(dateFilter === "custom"),
+              position: "relative",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Calendar size={13} />
+            {dateFilter === "custom" && customDate ? formatPillDate(customDate) : "Pick a date"}
+            <input
+              type="date"
+              aria-label="Pick a date"
+              value={customDate}
+              min={toDateInputValue(new Date())}
+              onChange={(e) => {
+                setCustomDate(e.target.value);
+                setDateFilter(e.target.value ? "custom" : "all");
+              }}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                opacity: 0,
+                cursor: "pointer",
+                padding: 0,
+                margin: 0,
+                border: "none",
+              }}
+            />
+          </label>
+          {dateFilter === "custom" && customDate && (
+            <button
+              type="button"
+              aria-label="Clear date filter"
+              onClick={() => selectChip("all")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 26,
+                height: 26,
+                borderRadius: "50%",
+                border: "1px solid var(--paper-deep)",
+                background: "var(--white)",
+                color: "var(--muted)",
+                cursor: "pointer",
+                padding: 0,
+                flexShrink: 0,
+              }}
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
       </div>
 
       <ErrorBanner message={error} />
