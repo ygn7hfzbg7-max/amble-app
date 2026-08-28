@@ -89,7 +89,7 @@ export default function MyPlans() {
             activity,
             confirmedCount: confirmed.length,
             confirmedNames: confirmed.map((r) => profileName(r.profiles)),
-            pendingCount: activityRequests.filter((r) => r.status === "pending").length,
+            pendingCount: activityRequests.filter((r) => r.status === "pending" || r.status === "waitlisted").length,
           };
         });
 
