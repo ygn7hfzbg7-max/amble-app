@@ -4,7 +4,7 @@ import { Mountain, UtensilsCrossed, Footprints, Clock, Users } from "lucide-reac
 
 const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
-export default function ActivityCard({ activity, spotsLeft, isFull }) {
+export default function ActivityCard({ activity, spotsLeft, isFull, isOwn }) {
   const navigate = useNavigate();
   const Icon = TYPE_ICON[activity.type] || Footprints;
 
@@ -24,21 +24,38 @@ export default function ActivityCard({ activity, spotsLeft, isFull }) {
             {activity.type}
           </span>
         </div>
-        {isFull && (
-          <span
-            className="mono"
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: "var(--muted)",
-              border: "1px solid var(--muted)",
-              borderRadius: 999,
-              padding: "2px 8px",
-            }}
-          >
-            Full
-          </span>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {isOwn && (
+            <span
+              className="mono"
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "var(--white)",
+                background: "var(--moss)",
+                borderRadius: 999,
+                padding: "2px 8px",
+              }}
+            >
+              Yours
+            </span>
+          )}
+          {isFull && (
+            <span
+              className="mono"
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: "var(--muted)",
+                border: "1px solid var(--muted)",
+                borderRadius: 999,
+                padding: "2px 8px",
+              }}
+            >
+              Full
+            </span>
+          )}
+        </div>
       </div>
       <h3 style={{ fontSize: 16, marginBottom: 6, color: isFull ? "var(--muted)" : "var(--ink)" }}>
         {activity.title}
