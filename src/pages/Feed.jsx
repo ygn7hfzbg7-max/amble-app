@@ -87,7 +87,6 @@ export default function Feed() {
           .from("activities")
           .select("*")
           .gte("starts_at", new Date().toISOString())
-          .neq("host_id", userId)
           .order("starts_at", { ascending: true });
         if (error) {
           setError(error.message);
@@ -115,6 +114,7 @@ export default function Feed() {
         const withSpots = upcoming.map((a) => ({
           ...a,
           spotsTaken: acceptedCounts[a.id] || 0,
+          isOwn: a.host_id === userId,
         }));
 
         setActivities(withSpots);
@@ -284,6 +284,7 @@ export default function Feed() {
           activity={a}
           spotsLeft={a.spots_total - a.spotsTaken}
           isFull={a.spotsTaken >= a.spots_total}
+          isOwn={a.isOwn}
         />
       ))}
     </div>
