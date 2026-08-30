@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, User, ClipboardList, Calendar, X } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ActivityCard from "../components/ActivityCard.jsx";
 import ErrorBanner from "../components/ErrorBanner.jsx";
+import LocationFilter from "../components/LocationFilter.jsx";
+import { distanceKm } from "../lib/geo";
 
 const DATE_CHIPS = [
   { key: "all", label: "All upcoming" },
@@ -65,12 +67,26 @@ function dateRangeFor(filter, customDate) {
   return null;
 }
 
+function dateContextPhrase(filter, customDate) {
+  if (filter === "today") return "today";
+  if (filter === "tomorrow") return "tomorrow";
+  if (filter === "weekend") return "this weekend";
+  if (filter === "custom" && customDate) return `on ${formatPillDate(customDate)}`;
+  return "";
+}
+
 export default function Feed() {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
   const [customDate, setCustomDate] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [cityFilter, setCityFilter] = useState(searchParams.get("city") || "");
+  const [nearMe, setNearMe] = useState(false);
+  const [userCoords, setUserCoords] = useState(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -126,19 +142,97 @@ export default function Feed() {
     })();
   }, []);
 
+  // Sync the active city into the URL so a filtered feed can be shared or
+  // restored on refresh, without relying on local/session storage.
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (cityFilter) next.set("city", cityFilter);
+    else next.delete("city");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cityFilter]);
+
+  const availableCities = useMemo(() => {
+    const cities = new Set(activities.map((a) => a.city).filter(Boolean));
+    return Array.from(cities).sort((a, b) => a.localeCompare(b));
+  }, [activities]);
+
+  const activitiesWithDistance = useMemo(() => {
+    if (!nearMe || !userCoords) return activities;
+    return activities.map((a) => {
+      if (a.latitude == null || a.longitude == null) return a;
+      const lat = Number(a.latitude);
+      const lng = Number(a.longitude);
+      if (Number.isNaN(lat) || Number.isNaN(lng)) return a;
+      return {
+        ...a,
+        distanceKm: distanceKm(userCoords.lat, userCoords.lng, lat, lng),
+      };
+    });
+  }, [activities, userCoords, nearMe]);
+
   const visibleActivities = useMemo(() => {
     const range = dateRangeFor(dateFilter, customDate);
-    if (!range) return activities;
-    const [start, end] = range;
-    return activities.filter((a) => {
-      const startsAt = new Date(a.starts_at);
-      return startsAt >= start && startsAt < end;
+    let list = activitiesWithDistance.filter((a) => {
+      if (range) {
+        const startsAt = new Date(a.starts_at);
+        if (startsAt < range[0] || startsAt >= range[1]) return false;
+      }
+      if (cityFilter && a.city !== cityFilter) return false;
+      return true;
     });
-  }, [activities, dateFilter, customDate]);
+    if (nearMe && userCoords) {
+      list = [...list].sort((a, b) => {
+        const da = typeof a.distanceKm === "number" ? a.distanceKm : Infinity;
+        const db = typeof b.distanceKm === "number" ? b.distanceKm : Infinity;
+        return da - db;
+      });
+    }
+    return list;
+  }, [activitiesWithDistance, dateFilter, customDate, cityFilter, nearMe, userCoords]);
 
   const selectChip = (key) => {
     setDateFilter(key);
     setCustomDate("");
+  };
+
+  const selectCity = (city) => {
+    setCityFilter(city);
+  };
+
+  const clearCity = () => {
+    setCityFilter("");
+  };
+
+  const toggleNearMe = () => {
+    if (nearMe) {
+      setNearMe(false);
+      return;
+    }
+    setGeoError("");
+    if (!navigator.geolocation) {
+      setGeoError("Location isn't available in this browser.");
+      return;
+    }
+    if (userCoords) {
+      setNearMe(true);
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setNearMe(true);
+        setGeoLoading(false);
+      },
+      () => {
+        // Permission denied or unavailable — fall back to the normal list
+        // without nagging the user again.
+        setGeoError("Couldn't get your location — showing all activities instead.");
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 }
+    );
   };
 
   const chipStyle = (active) => ({
@@ -181,6 +275,73 @@ export default function Feed() {
           </button>
         </div>
       </div>
+
+      <LocationFilter
+        cities={availableCities}
+        value={cityFilter}
+        onSelect={selectCity}
+        onClear={clearCity}
+        nearMe={nearMe}
+        onToggleNearMe={toggleNearMe}
+        geoLoading={geoLoading}
+        geoError={geoError}
+      />
+
+      {(cityFilter || dateFilter !== "all" || nearMe) && (
+        <div
+          className="mono"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 12,
+            fontSize: 11,
+            color: "var(--muted)",
+          }}
+        >
+          <span>Showing:</span>
+          {cityFilter && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--ink)", fontWeight: 600 }}>
+              {cityFilter}
+              <button
+                type="button"
+                aria-label="Clear city filter"
+                onClick={clearCity}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", display: "flex", padding: 0 }}
+              >
+                <X size={11} />
+              </button>
+            </span>
+          )}
+          {dateFilter !== "all" && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--ink)", fontWeight: 600 }}>
+              {cityFilter && "·"} {dateContextPhrase(dateFilter, customDate) || "custom date"}
+              <button
+                type="button"
+                aria-label="Clear date filter"
+                onClick={() => selectChip("all")}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", display: "flex", padding: 0 }}
+              >
+                <X size={11} />
+              </button>
+            </span>
+          )}
+          {nearMe && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--ink)", fontWeight: 600 }}>
+              {(cityFilter || dateFilter !== "all") && "·"} sorted by distance
+              <button
+                type="button"
+                aria-label="Turn off near me"
+                onClick={() => setNearMe(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", display: "flex", padding: 0 }}
+              >
+                <X size={11} />
+              </button>
+            </span>
+          )}
+        </div>
+      )}
 
       <div
         style={{
@@ -269,13 +430,32 @@ export default function Feed() {
       {!loading && !error && visibleActivities.length === 0 && (
         <div style={{ textAlign: "center", padding: "40px 0" }}>
           <p style={{ color: "var(--muted)", marginBottom: 20 }}>
-            {dateFilter === "all"
-              ? "No upcoming activities yet — be the first to get something going."
-              : "No activities match this date — try another day, or be the first to post one."}
+            {cityFilter || dateFilter !== "all" ? (
+              <>
+                No activities
+                {cityFilter ? ` in ${cityFilter}` : ""}
+                {dateFilter !== "all" ? ` ${dateContextPhrase(dateFilter, customDate)}` : ""}.{" "}
+                Try {cityFilter && dateFilter !== "all" ? "clearing the city or date" : cityFilter ? "clearing the city" : "another day"}, or be the first to post one.
+              </>
+            ) : (
+              "No upcoming activities yet — be the first to get something going."
+            )}
           </p>
-          <button className="btn-primary" onClick={() => navigate("/post")}>
-            Post an activity
-          </button>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            {cityFilter && (
+              <button className="btn-secondary" style={{ width: "auto", padding: "10px 16px" }} onClick={clearCity}>
+                Clear city
+              </button>
+            )}
+            {dateFilter !== "all" && (
+              <button className="btn-secondary" style={{ width: "auto", padding: "10px 16px" }} onClick={() => selectChip("all")}>
+                Clear date
+              </button>
+            )}
+            <button className="btn-primary" style={{ width: "auto", padding: "10px 16px" }} onClick={() => navigate("/post")}>
+              Post an activity
+            </button>
+          </div>
         </div>
       )}
       {visibleActivities.map((a) => (
@@ -285,6 +465,7 @@ export default function Feed() {
           spotsLeft={a.spots_total - a.spotsTaken}
           isFull={a.spotsTaken >= a.spots_total}
           isOwn={a.isOwn}
+          distanceKm={a.distanceKm}
         />
       ))}
     </div>
