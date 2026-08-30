@@ -36,7 +36,11 @@ export async function ensureProfile(user) {
     type          text          -- Hike | Food | Walk
     title         text
     description   text
-    meet_point    text
+    meet_point    text          -- human-readable meeting note, e.g. "by the north gate"
+    city          text          -- from the place picker, shown in listings + to unconfirmed viewers
+    country       text
+    latitude      numeric(10, 7) -- nullable — older activities may have no coordinates
+    longitude     numeric(10, 7)
     starts_at     timestamptz
     spots_total   int
     fee           numeric default 0
