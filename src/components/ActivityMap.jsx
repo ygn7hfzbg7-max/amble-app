@@ -35,49 +35,64 @@ function buildMapsUrl(latitude, longitude, label) {
 
 export default function ActivityMap({ latitude, longitude, precise, meetPoint }) {
   const containerRef = useRef(null);
+  const hasValidCoords = Number.isFinite(latitude) && Number.isFinite(longitude);
 
   useEffect(() => {
-    if (latitude == null || longitude == null || !containerRef.current) return undefined;
+    if (!hasValidCoords || !containerRef.current) return undefined;
 
-    const map = L.map(containerRef.current, {
-      zoomControl: true,
-      scrollWheelZoom: false,
-    });
-    map.attributionControl.setPrefix(false);
-
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: "abcd",
-      maxZoom: 20,
-    }).addTo(map);
-
-    if (precise) {
-      L.marker([latitude, longitude], { icon: pinIcon }).addTo(map);
-      map.setView([latitude, longitude], 15);
-    } else {
-      const circle = L.circle([latitude, longitude], {
-        radius: APPROX_RADIUS_METERS,
-        color: "#3c6e58",
-        weight: 2,
-        dashArray: "6 6",
-        fillColor: "#3c6e58",
-        fillOpacity: 0.12,
-      }).addTo(map);
-      L.circleMarker([latitude, longitude], {
-        radius: 5,
-        color: "#fbf8f1",
-        weight: 2,
-        fillColor: "#3c6e58",
-        fillOpacity: 1,
-      }).addTo(map);
-      map.fitBounds(circle.getBounds(), { padding: [8, 8] });
+    // Guard against a leftover Leaflet instance on this node (e.g. from a
+    // fast prop change or a dev double-effect) — re-initializing on top of
+    // one throws "Map container is already initialized."
+    if (containerRef.current._leaflet_id) {
+      delete containerRef.current._leaflet_id;
     }
 
-    return () => map.remove();
-  }, [latitude, longitude, precise]);
+    let map;
+    try {
+      map = L.map(containerRef.current, {
+        zoomControl: true,
+        scrollWheelZoom: false,
+      });
+      map.attributionControl.setPrefix(false);
 
-  if (latitude == null || longitude == null) return null;
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: "abcd",
+        maxZoom: 20,
+      }).addTo(map);
+
+      if (precise) {
+        L.marker([latitude, longitude], { icon: pinIcon }).addTo(map);
+        map.setView([latitude, longitude], 15);
+      } else {
+        const circle = L.circle([latitude, longitude], {
+          radius: APPROX_RADIUS_METERS,
+          color: "#3c6e58",
+          weight: 2,
+          dashArray: "6 6",
+          fillColor: "#3c6e58",
+          fillOpacity: 0.12,
+        }).addTo(map);
+        L.circleMarker([latitude, longitude], {
+          radius: 5,
+          color: "#fbf8f1",
+          weight: 2,
+          fillColor: "#3c6e58",
+          fillOpacity: 1,
+        }).addTo(map);
+        map.fitBounds(circle.getBounds(), { padding: [8, 8] });
+      }
+    } catch (err) {
+      console.error("Couldn't render the activity map:", err);
+    }
+
+    return () => {
+      if (map) map.remove();
+    };
+  }, [latitude, longitude, precise, hasValidCoords]);
+
+  if (!hasValidCoords) return null;
 
   return (
     <div style={{ marginBottom: 8 }}>
