@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
+import ActivityMap from "../components/ActivityMap.jsx";
 
 export default function ActivityDetail() {
   const { id } = useParams();
@@ -84,6 +85,14 @@ export default function ActivityDetail() {
   if (!activity) return <div style={{ padding: 24 }}>Loading…</div>;
 
   const isHost = activity.host_id === userId;
+  const canSeeExact = isHost || myRequestStatus === "accepted";
+  const hasLocation = activity.latitude != null && activity.longitude != null;
+  const areaLabel = [activity.city, activity.country].filter(Boolean).join(", ");
+  const meetPointLabel = canSeeExact
+    ? activity.meet_point
+    : areaLabel
+    ? `Near ${areaLabel} — exact spot shared once you're confirmed.`
+    : "Shared once you're confirmed.";
 
   return (
     <div style={{ padding: "24px 20px" }}>
@@ -98,9 +107,17 @@ export default function ActivityDetail() {
       <h1 style={{ fontSize: 22, marginBottom: 8 }}>{activity.title}</h1>
       <p style={{ color: "var(--muted)", marginBottom: 20 }}>{activity.description}</p>
 
+      {hasLocation && (
+        <ActivityMap
+          latitude={Number(activity.latitude)}
+          longitude={Number(activity.longitude)}
+          precise={canSeeExact}
+        />
+      )}
+
       <div className="card">
         <p><strong>When:</strong> {new Date(activity.starts_at).toLocaleString()}</p>
-        <p><strong>Meet at:</strong> {activity.meet_point}</p>
+        <p><strong>Meet at:</strong> {meetPointLabel}</p>
         <p><strong>Fee:</strong> {activity.fee ? `£${activity.fee}` : "Free"}</p>
         <p>
           <strong>Spots:</strong>{" "}

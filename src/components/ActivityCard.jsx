@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Mountain, UtensilsCrossed, Footprints, Clock, Users } from "lucide-react";
+import { Mountain, UtensilsCrossed, Footprints, Clock, Users, MapPin } from "lucide-react";
 
 const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
@@ -64,6 +64,12 @@ export default function ActivityCard({ activity, spotsLeft, isFull, isOwn }) {
         <Clock size={12} />
         {new Date(activity.starts_at).toLocaleString()}
       </div>
+      {activity.city && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12, marginBottom: 4 }}>
+          <MapPin size={12} />
+          {[activity.city, activity.country].filter(Boolean).join(", ")}
+        </div>
+      )}
       <div
         className="mono"
         style={{

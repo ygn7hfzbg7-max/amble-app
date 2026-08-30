@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
+import LocationPicker from "../components/LocationPicker.jsx";
 
 export default function PostActivity() {
   const navigate = useNavigate();
@@ -15,11 +16,19 @@ export default function PostActivity() {
     spots_total: 2,
     fee: 0,
   });
+  const [location, setLocation] = useState(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const update = (key) => (e) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const handleSelectLocation = (loc) => {
+    setLocation(loc);
+    if (loc && !form.meet_point) {
+      setForm((f) => ({ ...f, meet_point: loc.display_name.split(",")[0] }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,6 +42,10 @@ export default function PostActivity() {
       }
       const { error } = await supabase.from("activities").insert({
         ...form,
+        city: location?.city || null,
+        country: location?.country || null,
+        latitude: location?.latitude ?? null,
+        longitude: location?.longitude ?? null,
         host_id: userData.user.id,
       });
       if (error) setError(error.message);
@@ -67,7 +80,9 @@ export default function PostActivity() {
 
         <textarea placeholder="Description" value={form.description} onChange={update("description")} rows={3} />
 
-        <input placeholder="Meeting point (public place)" value={form.meet_point} onChange={update("meet_point")} required />
+        <LocationPicker selected={location} onSelect={handleSelectLocation} />
+
+        <input placeholder="Meeting point (public place, e.g. 'by the north gate')" value={form.meet_point} onChange={update("meet_point")} required />
 
         <input type="datetime-local" value={form.starts_at} onChange={update("starts_at")} required />
 

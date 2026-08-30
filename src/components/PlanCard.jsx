@@ -25,6 +25,8 @@ export default function PlanCard({ plan }) {
 
   const isConfirmed =
     role === "hosting" ? plan.confirmedCount > 0 : plan.myStatus === "accepted";
+  const canSeeExact = role === "hosting" || plan.myStatus === "accepted";
+  const areaLabel = [activity.city, activity.country].filter(Boolean).join(", ");
 
   return (
     <div
@@ -64,10 +66,15 @@ export default function PlanCard({ plan }) {
         <Clock size={12} />
         {new Date(activity.starts_at).toLocaleString()}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12, marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12, marginBottom: canSeeExact ? 4 : 10 }}>
         <MapPin size={12} />
-        {activity.meet_point}
+        {canSeeExact ? activity.meet_point : areaLabel || "Location shared once confirmed"}
       </div>
+      {canSeeExact && areaLabel && (
+        <div className="mono" style={{ color: "var(--muted)", fontSize: 11, marginBottom: 10 }}>
+          {areaLabel}
+        </div>
+      )}
 
       {role === "hosting" ? (
         <div style={{ fontSize: 13 }}>
