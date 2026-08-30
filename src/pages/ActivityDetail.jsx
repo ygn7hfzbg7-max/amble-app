@@ -112,6 +112,7 @@ export default function ActivityDetail() {
           latitude={Number(activity.latitude)}
           longitude={Number(activity.longitude)}
           precise={canSeeExact}
+          meetPoint={canSeeExact ? activity.meet_point : undefined}
         />
       )}
 
