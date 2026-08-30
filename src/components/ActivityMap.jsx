@@ -2,20 +2,20 @@ import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import { Navigation } from "lucide-react";
 import "leaflet/dist/leaflet.css";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-
-// Vite rewrites Leaflet's default marker icon URLs incorrectly unless we
-// point them at the bundled assets ourselves.
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
 
 const APPROX_RADIUS_METERS = 400;
+
+// A pin in the app's brick accent, in place of Leaflet's stock blue marker.
+const pinIcon = L.divIcon({
+  className: "amble-pin",
+  html: `<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15 0C6.716 0 0 6.716 0 15c0 10.5 15 25 15 25s15-14.5 15-25C30 6.716 23.284 0 15 0z" fill="#b84b2c"/>
+      <circle cx="15" cy="15" r="5.5" fill="#fbf8f1"/>
+    </svg>`,
+  iconSize: [30, 40],
+  iconAnchor: [15, 40],
+  popupAnchor: [0, -36],
+});
 
 function isIOSDevice() {
   if (typeof navigator === "undefined") return false;
@@ -43,22 +43,33 @@ export default function ActivityMap({ latitude, longitude, precise, meetPoint })
       zoomControl: true,
       scrollWheelZoom: false,
     });
+    map.attributionControl.setPrefix(false);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 20,
     }).addTo(map);
 
     if (precise) {
-      L.marker([latitude, longitude]).addTo(map);
+      L.marker([latitude, longitude], { icon: pinIcon }).addTo(map);
       map.setView([latitude, longitude], 15);
     } else {
       const circle = L.circle([latitude, longitude], {
         radius: APPROX_RADIUS_METERS,
         color: "#3c6e58",
-        weight: 1,
+        weight: 2,
+        dashArray: "6 6",
         fillColor: "#3c6e58",
-        fillOpacity: 0.15,
+        fillOpacity: 0.12,
+      }).addTo(map);
+      L.circleMarker([latitude, longitude], {
+        radius: 5,
+        color: "#fbf8f1",
+        weight: 2,
+        fillColor: "#3c6e58",
+        fillOpacity: 1,
       }).addTo(map);
       map.fitBounds(circle.getBounds(), { padding: [8, 8] });
     }
@@ -70,15 +81,7 @@ export default function ActivityMap({ latitude, longitude, precise, meetPoint })
 
   return (
     <div style={{ marginBottom: 8 }}>
-      <div
-        ref={containerRef}
-        style={{
-          height: 200,
-          borderRadius: 16,
-          overflow: "hidden",
-          border: "1px solid var(--paper-deep)",
-        }}
-      />
+      <div ref={containerRef} className="activity-map" style={{ height: 200 }} />
       {!precise && (
         <p className="mono" style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
           Approximate area — exact meeting point shared once confirmed.
