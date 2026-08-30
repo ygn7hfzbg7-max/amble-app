@@ -24,7 +24,7 @@ const SECTION_HEADING_STYLE = {
   marginBottom: 10,
 };
 
-function Section({ title, plans }) {
+function Section({ title, plans, unreadThreads }) {
   if (plans.length === 0) return null;
   return (
     <>
@@ -32,7 +32,7 @@ function Section({ title, plans }) {
         {title}
       </h2>
       {plans.map((plan) => (
-        <PlanCard key={`${plan.role}-${plan.activity.id}`} plan={plan} />
+        <PlanCard key={`${plan.role}-${plan.activity.id}`} plan={plan} unreadThreads={unreadThreads} />
       ))}
     </>
   );
@@ -42,6 +42,7 @@ export default function MyPlans() {
   const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
+  const [unreadThreads, setUnreadThreads] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showPast, setShowPast] = useState(false);
@@ -87,8 +88,11 @@ export default function MyPlans() {
           return {
             role: "hosting",
             activity,
-            confirmedCount: confirmed.length,
-            confirmedNames: confirmed.map((r) => profileName(r.profiles)),
+            confirmed: confirmed.map((r) => ({
+              requestId: r.id,
+              travellerId: r.traveller_id,
+              name: profileName(r.profiles),
+            })),
             pendingCount: activityRequests.filter((r) => r.status === "pending" || r.status === "waitlisted").length,
           };
         });
@@ -116,6 +120,19 @@ export default function MyPlans() {
         );
         setPlans(combined);
         setPendingCount(hostingPlans.reduce((sum, p) => sum + p.pendingCount, 0));
+
+        const { data: unreadMessages, error: unreadError } = await supabase
+          .from("messages")
+          .select("activity_id, sender_id")
+          .eq("recipient_id", userId)
+          .is("read_at", null);
+        if (unreadError) {
+          setError(unreadError.message);
+          return;
+        }
+        setUnreadThreads(
+          new Set((unreadMessages || []).map((m) => `${m.activity_id}:${m.sender_id}`))
+        );
       } catch (err) {
         setError(err.message || "Couldn't load your plans. Please try again.");
       } finally {
@@ -196,9 +213,9 @@ export default function MyPlans() {
 
       {!loading && (
         <>
-          <Section title="Today" plans={groups.today} />
-          <Section title="This week" plans={groups.thisWeek} />
-          <Section title="Later" plans={groups.later} />
+          <Section title="Today" plans={groups.today} unreadThreads={unreadThreads} />
+          <Section title="This week" plans={groups.thisWeek} unreadThreads={unreadThreads} />
+          <Section title="Later" plans={groups.later} unreadThreads={unreadThreads} />
 
           {groups.past.length > 0 && (
             <div style={{ marginTop: 12 }}>
@@ -218,7 +235,7 @@ export default function MyPlans() {
                 {showPast ? "Hide" : "Show"} past ({groups.past.length})
               </button>
               {showPast && groups.past.map((plan) => (
-                <PlanCard key={`${plan.role}-${plan.activity.id}`} plan={plan} />
+                <PlanCard key={`${plan.role}-${plan.activity.id}`} plan={plan} unreadThreads={unreadThreads} />
               ))}
             </div>
           )}

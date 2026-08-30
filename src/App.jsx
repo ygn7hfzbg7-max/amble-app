@@ -10,6 +10,7 @@ import Profile from "./pages/Profile.jsx";
 import EditProfile from "./pages/EditProfile.jsx";
 import MyPlans from "./pages/MyPlans.jsx";
 import PendingRequests from "./pages/PendingRequests.jsx";
+import ChatThread from "./pages/ChatThread.jsx";
 
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = loading
@@ -61,6 +62,10 @@ export default function App() {
           <Route
             path="/my-plans/requests"
             element={session ? <PendingRequests /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/chat/:activityId/:otherId"
+            element={session ? <ChatThread /> : <Navigate to="/login" />}
           />
           <Route
             path="/profile"

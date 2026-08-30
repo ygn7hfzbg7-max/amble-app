@@ -63,6 +63,20 @@ export async function ensureProfile(user) {
     note          text
     created_at    timestamptz default now()
 
+  messages
+    id            uuid primary key default gen_random_uuid()
+    activity_id   uuid references activities.id
+    sender_id     uuid references profiles.id
+    recipient_id  uuid references profiles.id
+    body          text
+    created_at    timestamptz default now()
+    read_at       timestamptz  -- null until the recipient opens the thread
+
+    One row per 1:1 message between a host and a specific confirmed
+    traveller on one activity — chat only unlocks once a request between
+    them is "accepted"; see the SQL migration for the exact table + RLS
+    policies this app relies on.
+
   Enable Row Level Security on all tables and add policies so:
   - anyone can read activities
   - only the host can insert/update their own activities
@@ -75,4 +89,10 @@ export async function ensureProfile(user) {
     which is what the "ensureProfile" upsert above and the profile edit
     screen rely on
   - only participants in an activity can insert a review about each other
+  - a user can read a message only if they are its sender or recipient
+  - a user can insert a message only as themselves, and only when an
+    accepted request links them to the other party on that activity
+    (host <-> that confirmed traveller — nobody else)
+  - a user can update only the read_at column, and only on messages sent
+    to them (marking a thread as read)
 */

@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Mountain, UtensilsCrossed, Footprints, Clock, MapPin } from "lucide-react";
+import { Mountain, UtensilsCrossed, Footprints, Clock, MapPin, MessageCircle } from "lucide-react";
 
 const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
@@ -18,15 +18,57 @@ const STATUS_COLOR = {
   waitlisted: "var(--gold)",
 };
 
-export default function PlanCard({ plan }) {
+function messageButtonStyle() {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
+    background: "none",
+    border: "1px solid var(--paper-deep)",
+    borderRadius: 999,
+    padding: "4px 10px",
+    fontSize: 11,
+    fontWeight: 600,
+    cursor: "pointer",
+    color: "var(--ink)",
+  };
+}
+
+function UnreadDot({ size = 8 }) {
+  return (
+    <span
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        background: "var(--brick)",
+        display: "inline-block",
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+export default function PlanCard({ plan, unreadThreads }) {
   const navigate = useNavigate();
   const { activity, role } = plan;
   const Icon = TYPE_ICON[activity.type] || Footprints;
+  const unread = unreadThreads || new Set();
 
   const isConfirmed =
-    role === "hosting" ? plan.confirmedCount > 0 : plan.myStatus === "accepted";
+    role === "hosting" ? plan.confirmed.length > 0 : plan.myStatus === "accepted";
   const canSeeExact = role === "hosting" || plan.myStatus === "accepted";
   const areaLabel = [activity.city, activity.country].filter(Boolean).join(", ");
+
+  const hasUnread =
+    role === "hosting"
+      ? plan.confirmed.some((c) => unread.has(`${activity.id}:${c.travellerId}`))
+      : plan.myStatus === "accepted" && unread.has(`${activity.id}:${activity.host_id}`);
+
+  const goToChat = (e, otherId) => {
+    e.stopPropagation();
+    navigate(`/chat/${activity.id}/${otherId}`);
+  };
 
   return (
     <div
@@ -45,19 +87,22 @@ export default function PlanCard({ plan }) {
             {activity.type}
           </span>
         </div>
-        <span
-          className="mono"
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: role === "hosting" ? "var(--gold)" : "var(--muted)",
-            border: `1px solid ${role === "hosting" ? "var(--gold)" : "var(--muted)"}`,
-            borderRadius: 999,
-            padding: "2px 8px",
-          }}
-        >
-          {role === "hosting" ? "Hosting" : "Joining"}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {hasUnread && <UnreadDot />}
+          <span
+            className="mono"
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: role === "hosting" ? "var(--gold)" : "var(--muted)",
+              border: `1px solid ${role === "hosting" ? "var(--gold)" : "var(--muted)"}`,
+              borderRadius: 999,
+              padding: "2px 8px",
+            }}
+          >
+            {role === "hosting" ? "Hosting" : "Joining"}
+          </span>
+        </div>
       </div>
 
       <h3 style={{ fontSize: 16, marginBottom: 6 }}>{activity.title}</h3>
@@ -79,20 +124,53 @@ export default function PlanCard({ plan }) {
       {role === "hosting" ? (
         <div style={{ fontSize: 13 }}>
           <div className="mono" style={{ fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>
-            {plan.confirmedCount}/{activity.spots_total} confirmed
+            {plan.confirmed.length}/{activity.spots_total} confirmed
           </div>
-          {plan.confirmedNames.length > 0 ? (
-            <div>{plan.confirmedNames.join(", ")}</div>
+          {plan.confirmed.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {plan.confirmed.map((c) => (
+                <div
+                  key={c.requestId}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {c.name}
+                    </span>
+                    {unread.has(`${activity.id}:${c.travellerId}`) && <UnreadDot size={6} />}
+                  </span>
+                  <button
+                    className="mono"
+                    style={{ ...messageButtonStyle(), flexShrink: 0 }}
+                    onClick={(e) => goToChat(e, c.travellerId)}
+                  >
+                    <MessageCircle size={12} /> Message
+                  </button>
+                </div>
+              ))}
+            </div>
           ) : (
             <div style={{ color: "var(--muted)" }}>No one confirmed yet</div>
           )}
         </div>
       ) : (
-        <div style={{ fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>Host: {plan.hostName}</span>
-          <span className="mono" style={{ fontWeight: 600, color: STATUS_COLOR[plan.myStatus] || "var(--muted)" }}>
-            {STATUS_LABEL[plan.myStatus] || plan.myStatus}
-          </span>
+        <div style={{ fontSize: 13 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>Host: {plan.hostName}</span>
+            <span className="mono" style={{ fontWeight: 600, color: STATUS_COLOR[plan.myStatus] || "var(--muted)" }}>
+              {STATUS_LABEL[plan.myStatus] || plan.myStatus}
+            </span>
+          </div>
+          {plan.myStatus === "accepted" && (
+            <button
+              className="mono"
+              style={{ ...messageButtonStyle(), marginTop: 10 }}
+              onClick={(e) => goToChat(e, activity.host_id)}
+            >
+              <MessageCircle size={12} /> Message host
+              {unread.has(`${activity.id}:${activity.host_id}`) && <UnreadDot size={6} />}
+            </button>
+          )}
         </div>
       )}
     </div>

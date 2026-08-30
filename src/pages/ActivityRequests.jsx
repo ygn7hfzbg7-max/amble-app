@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, MessageCircle } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 
@@ -107,7 +107,7 @@ export default function ActivityRequests() {
   const acceptedCount = requests.filter((r) => r.status === "accepted").length;
   const spotsFree = activity.spots_total - acceptedCount;
 
-  const renderRequest = (r, { showAccept, showDecline, showRemove } = {}) => {
+  const renderRequest = (r, { showAccept, showDecline, showRemove, showMessage } = {}) => {
     const profile = r.profiles || {};
     const name = profile.display_name || profile.email || "Someone";
     return (
@@ -134,8 +134,17 @@ export default function ActivityRequests() {
             A spot is open — you can accept them now.
           </p>
         )}
-        {(showAccept || showDecline || showRemove) && (
-          <div style={{ display: "flex", gap: 10 }}>
+        {(showAccept || showDecline || showRemove || showMessage) && (
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {showMessage && (
+              <button
+                className="btn-secondary"
+                style={{ width: "auto", padding: "10px 18px", display: "flex", alignItems: "center", gap: 6 }}
+                onClick={() => navigate(`/chat/${activity.id}/${r.traveller_id}`)}
+              >
+                <MessageCircle size={16} /> Message
+              </button>
+            )}
             {showAccept && (
               <button
                 className="btn-primary"
@@ -205,7 +214,9 @@ export default function ActivityRequests() {
         </>
       )}
 
-      {otherRequests.map((r) => renderRequest(r, { showRemove: r.status === "accepted" }))}
+      {otherRequests.map((r) =>
+        renderRequest(r, { showRemove: r.status === "accepted", showMessage: r.status === "accepted" })
+      )}
     </div>
   );
 }
