@@ -87,6 +87,7 @@ export default function Feed() {
   const [userCoords, setUserCoords] = useState(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -140,6 +141,39 @@ export default function Feed() {
         setLoading(false);
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    let channel;
+    (async () => {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) return;
+      const userId = userData.user.id;
+
+      const { count, error: countError } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_id", userId)
+        .is("read_at", null);
+      if (countError) {
+        setError(countError.message);
+        return;
+      }
+      setUnreadCount(count || 0);
+
+      channel = supabase
+        .channel(`unread-messages-${userId}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages", filter: `recipient_id=eq.${userId}` },
+          () => setUnreadCount((c) => c + 1)
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
   // Sync the active city into the URL so a filtered feed can be shared or
@@ -259,13 +293,38 @@ export default function Feed() {
           >
             <Plus size={16} />
           </button>
-          <button
-            className="btn-secondary"
-            style={{ width: "auto", padding: 10 }}
-            onClick={() => navigate("/my-plans")}
-          >
-            <ClipboardList size={16} />
-          </button>
+          <div style={{ position: "relative" }}>
+            <button
+              className="btn-secondary"
+              style={{ width: "auto", padding: 10 }}
+              onClick={() => navigate("/my-plans")}
+            >
+              <ClipboardList size={16} />
+            </button>
+            {unreadCount > 0 && (
+              <span
+                className="mono"
+                style={{
+                  position: "absolute",
+                  top: -4,
+                  right: -4,
+                  background: "var(--brick)",
+                  color: "var(--white)",
+                  borderRadius: 999,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  minWidth: 16,
+                  height: 16,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0 3px",
+                }}
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </div>
           <button
             className="btn-secondary"
             style={{ width: "auto", padding: 10 }}

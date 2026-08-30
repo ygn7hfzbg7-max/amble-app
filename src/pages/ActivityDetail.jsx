@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, MessageCircle } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import ActivityMap from "../components/ActivityMap.jsx";
@@ -140,10 +140,19 @@ export default function ActivityDetail() {
         <>
           <ErrorBanner message={requestError} />
           {myRequestStatus === "accepted" && (
-            <p style={{ color: "var(--moss)", fontWeight: 600 }}>
-              You're confirmed! Meet at {activity.meet_point} on{" "}
-              {new Date(activity.starts_at).toLocaleString()}.
-            </p>
+            <>
+              <p style={{ color: "var(--moss)", fontWeight: 600 }}>
+                You're confirmed! Meet at {activity.meet_point} on{" "}
+                {new Date(activity.starts_at).toLocaleString()}.
+              </p>
+              <button
+                className="btn-secondary"
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+                onClick={() => navigate(`/chat/${id}/${activity.host_id}`)}
+              >
+                <MessageCircle size={16} /> Message host
+              </button>
+            </>
           )}
           {myRequestStatus === "pending" && (
             <p style={{ color: "var(--moss)", fontWeight: 600 }}>
