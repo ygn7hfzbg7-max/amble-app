@@ -1,10 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Mountain, UtensilsCrossed, Footprints, Clock, Users, MapPin } from "lucide-react";
+import { Mountain, UtensilsCrossed, Footprints, Clock, Users, MapPin, Navigation } from "lucide-react";
+import { formatDistance } from "../lib/geo";
 
 const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
-export default function ActivityCard({ activity, spotsLeft, isFull, isOwn }) {
+export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, distanceKm }) {
   const navigate = useNavigate();
   const Icon = TYPE_ICON[activity.type] || Footprints;
 
@@ -68,6 +69,12 @@ export default function ActivityCard({ activity, spotsLeft, isFull, isOwn }) {
         <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12, marginBottom: 4 }}>
           <MapPin size={12} />
           {[activity.city, activity.country].filter(Boolean).join(", ")}
+        </div>
+      )}
+      {typeof distanceKm === "number" && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--moss)", fontSize: 12, marginBottom: 4 }}>
+          <Navigation size={12} />
+          {formatDistance(distanceKm)}
         </div>
       )}
       <div

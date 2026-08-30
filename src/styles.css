@@ -128,6 +128,15 @@ input, textarea, select {
   color: var(--muted);
 }
 
+.spin {
+  animation: amble-spin 0.8s linear infinite;
+}
+
+@keyframes amble-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .error-banner {
   color: var(--brick);
   background: rgba(184, 75, 44, 0.08);
