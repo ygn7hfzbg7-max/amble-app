@@ -1,8 +1,11 @@
 import React, { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 
 export default function Login() {
+  const [searchParams] = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/";
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -13,7 +16,12 @@ export default function Login() {
     setError("");
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({ email });
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        // Sends the magic link back to the page the user meant to reach
+        // (e.g. the activity they were trying to join) instead of "/".
+        options: { emailRedirectTo: `${window.location.origin}${redirectPath}` },
+      });
       if (error) setError(error.message);
       else setSent(true);
     } catch (err) {

@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Mountain, UtensilsCrossed, Footprints, Clock, MapPin, MessageCircle } from "lucide-react";
+import ShareButton from "./ShareButton.jsx";
 
 const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
@@ -89,6 +90,28 @@ export default function PlanCard({ plan, unreadThreads }) {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           {hasUnread && <UnreadDot />}
+          {role === "hosting" && (
+            <ShareButton
+              iconOnly
+              title={activity.title}
+              text={`Join me for ${activity.title}${areaLabel ? ` in ${areaLabel}` : ""} on Amble.`}
+              url={`${window.location.origin}/activity/${activity.id}`}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                border: "1px solid var(--paper-deep)",
+                background: "var(--white)",
+                color: "var(--ink)",
+                cursor: "pointer",
+                padding: 0,
+              }}
+            />
+          )}
           <span
             className="mono"
             style={{
