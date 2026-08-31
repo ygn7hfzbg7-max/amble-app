@@ -37,16 +37,22 @@ export default function App() {
         <Routes>
           <Route
             path="/login"
-            element={session ? <Navigate to="/" /> : <Login />}
+            element={
+              session ? (
+                <Navigate to={new URLSearchParams(window.location.search).get("redirect") || "/"} />
+              ) : (
+                <Login />
+              )
+            }
           />
           <Route
             path="/"
             element={session ? <Feed /> : <Navigate to="/login" />}
           />
-          <Route
-            path="/activity/:id"
-            element={session ? <ActivityDetail /> : <Navigate to="/login" />}
-          />
+          {/* Public so a shared link works for someone who isn't logged in — they land
+              on the activity's public (unconfirmed) view and are prompted to sign up
+              or log in from there in order to request to join. */}
+          <Route path="/activity/:id" element={<ActivityDetail />} />
           <Route
             path="/activity/:id/requests"
             element={session ? <ActivityRequests /> : <Navigate to="/login" />}

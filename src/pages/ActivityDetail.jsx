@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { ChevronLeft, MessageCircle } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import ActivityMap from "../components/ActivityMap.jsx";
+import ShareButton from "../components/ShareButton.jsx";
 
 export default function ActivityDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activity, setActivity] = useState(null);
   const [acceptedCount, setAcceptedCount] = useState(0);
   const [loadError, setLoadError] = useState("");
@@ -24,12 +26,15 @@ export default function ActivityDetail() {
 
     (async () => {
       try {
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (userError) {
-          if (!cancelled) setLoadError(userError.message);
+        // getSession() (unlike getUser()) doesn't error out for a logged-out
+        // visitor — it just resolves with session: null — so an unauthenticated
+        // viewer still gets the public activity view instead of an error banner.
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          if (!cancelled) setLoadError(sessionError.message);
           return;
         }
-        const me = userData?.user?.id || null;
+        const me = sessionData?.session?.user?.id || null;
         if (cancelled) return;
         setUserId(me);
 
@@ -136,13 +141,21 @@ export default function ActivityDetail() {
 
   return (
     <div style={{ padding: "24px 20px" }}>
-      <button
-        onClick={() => navigate(-1)}
-        className="mono"
-        style={{ background: "none", border: "none", display: "flex", alignItems: "center", gap: 4, marginBottom: 20, cursor: "pointer" }}
-      >
-        <ChevronLeft size={16} /> back
-      </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <button
+          onClick={() => (location.key === "default" ? navigate("/") : navigate(-1))}
+          className="mono"
+          style={{ background: "none", border: "none", display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}
+        >
+          <ChevronLeft size={16} /> back
+        </button>
+        <ShareButton
+          title={activity.title}
+          text={`Join me for ${activity.title}${areaLabel ? ` in ${areaLabel}` : ""} on Amble.`}
+          url={`${window.location.origin}/activity/${id}`}
+          style={{ width: "auto", padding: "8px 14px" }}
+        />
+      </div>
 
       <ErrorBoundary
         fallback={
@@ -271,9 +284,18 @@ export default function ActivityDetail() {
             </p>
           )}
           {myRequestStatus == null && (
-            <button className="btn-primary" onClick={handleRequest} disabled={requesting || !userId}>
-              {requesting ? "Sending…" : isFull ? "Join waitlist" : "Request to join"}
-            </button>
+            userId ? (
+              <button className="btn-primary" onClick={handleRequest} disabled={requesting}>
+                {requesting ? "Sending…" : isFull ? "Join waitlist" : "Request to join"}
+              </button>
+            ) : (
+              <button
+                className="btn-primary"
+                onClick={() => navigate(`/login?redirect=/activity/${id}`)}
+              >
+                Sign up or log in to request to join
+              </button>
+            )
           )}
         </>
       )}
