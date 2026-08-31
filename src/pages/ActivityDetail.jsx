@@ -17,6 +17,7 @@ export default function ActivityDetail() {
   const [myRequestStatus, setMyRequestStatus] = useState(null);
   const [requestError, setRequestError] = useState("");
   const [requesting, setRequesting] = useState(false);
+  const [confirmedAttendees, setConfirmedAttendees] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +67,20 @@ export default function ActivityDetail() {
             setWarning((w) => w || "Couldn't load your request status. Please refresh.");
           } else {
             setMyRequestStatus(myRequest?.status || null);
+          }
+        }
+
+        if (me && data?.host_id === me) {
+          const { data: confirmedRequests, error: confirmedError } = await supabase
+            .from("requests")
+            .select("id, traveller_id, profiles(display_name, email)")
+            .eq("activity_id", id)
+            .eq("status", "accepted");
+          if (cancelled) return;
+          if (confirmedError) {
+            setWarning((w) => w || "Couldn't load confirmed attendees.");
+          } else {
+            setConfirmedAttendees(confirmedRequests || []);
           }
         }
       } catch (err) {
@@ -169,9 +184,55 @@ export default function ActivityDetail() {
       </div>
 
       {isHost && (
-        <button className="btn-primary" onClick={() => navigate(`/activity/${id}/requests`)}>
-          View requests
-        </button>
+        <>
+          <h2
+            className="mono"
+            style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, color: "var(--muted)", marginTop: 8, marginBottom: 10 }}
+          >
+            Confirmed attendees
+          </h2>
+          {confirmedAttendees.length === 0 ? (
+            <p style={{ color: "var(--muted)", marginBottom: 16 }}>No one confirmed yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+              {confirmedAttendees.map((r) => {
+                const profile = r.profiles || {};
+                const name = profile.display_name || profile.email || "Someone";
+                return (
+                  <div
+                    key={r.id}
+                    className="card"
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {name}
+                      </div>
+                      {profile.email && (
+                        <div
+                          className="mono"
+                          style={{ fontSize: 12, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                        >
+                          {profile.email}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      className="btn-secondary"
+                      style={{ width: "auto", padding: "10px 18px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}
+                      onClick={() => navigate(`/chat/${id}/${r.traveller_id}`)}
+                    >
+                      <MessageCircle size={16} /> Message
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <button className="btn-primary" onClick={() => navigate(`/activity/${id}/requests`)}>
+            View requests
+          </button>
+        </>
       )}
 
       {!isHost && (
