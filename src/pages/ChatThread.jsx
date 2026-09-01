@@ -3,11 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, Send } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
-
-function displayName(profile) {
-  if (!profile) return "Someone";
-  return profile.display_name || profile.email || "Someone";
-}
+import Avatar from "../components/Avatar.jsx";
+import { displayName } from "../lib/profileDisplay";
 
 export default function ChatThread() {
   const { activityId, otherId } = useParams();
@@ -40,7 +37,7 @@ export default function ChatThread() {
 
         const [activityRes, profileRes] = await Promise.all([
           supabase.from("activities").select("id, title").eq("id", activityId).single(),
-          supabase.from("profiles").select("id, display_name, email").eq("id", otherId).single(),
+          supabase.from("profiles").select("id, display_name, avatar_url").eq("id", otherId).single(),
         ]);
         if (activityRes.error) {
           setLoadError(activityRes.error.message);
@@ -172,8 +169,19 @@ export default function ChatThread() {
         >
           <ChevronLeft size={16} /> back
         </button>
-        <h1 style={{ fontSize: 18, marginBottom: 2 }}>{displayName(otherProfile)}</h1>
-        <p className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>{activity?.title}</p>
+        <div
+          role="button"
+          tabIndex={0}
+          style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
+          onClick={() => navigate(`/profile/${otherId}`)}
+          onKeyDown={(e) => e.key === "Enter" && navigate(`/profile/${otherId}`)}
+        >
+          <Avatar src={otherProfile?.avatar_url} name={otherProfile?.display_name} seed={otherId} size={36} />
+          <div>
+            <h1 style={{ fontSize: 18, marginBottom: 2 }}>{displayName(otherProfile)}</h1>
+            <p className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>{activity?.title}</p>
+          </div>
+        </div>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>

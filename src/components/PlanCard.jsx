@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Mountain, UtensilsCrossed, Footprints, Clock, MapPin, MessageCircle } from "lucide-react";
 import ShareButton from "./ShareButton.jsx";
+import Avatar from "./Avatar.jsx";
 
 const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
@@ -69,6 +70,11 @@ export default function PlanCard({ plan, unreadThreads }) {
   const goToChat = (e, otherId) => {
     e.stopPropagation();
     navigate(`/chat/${activity.id}/${otherId}`);
+  };
+
+  const goToProfile = (e, otherId) => {
+    e.stopPropagation();
+    navigate(`/profile/${otherId}`);
   };
 
   return (
@@ -156,7 +162,14 @@ export default function PlanCard({ plan, unreadThreads }) {
                   key={c.requestId}
                   style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}
                 >
-                  <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, cursor: "pointer" }}
+                    onClick={(e) => goToProfile(e, c.travellerId)}
+                    onKeyDown={(e) => e.key === "Enter" && goToProfile(e, c.travellerId)}
+                  >
+                    <Avatar src={c.avatarUrl} name={c.name} seed={c.travellerId} size={22} />
                     <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {c.name}
                     </span>
@@ -179,7 +192,16 @@ export default function PlanCard({ plan, unreadThreads }) {
       ) : (
         <div style={{ fontSize: 13 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>Host: {plan.hostName}</span>
+            <span
+              role="button"
+              tabIndex={0}
+              style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, cursor: "pointer" }}
+              onClick={(e) => goToProfile(e, activity.host_id)}
+              onKeyDown={(e) => e.key === "Enter" && goToProfile(e, activity.host_id)}
+            >
+              <Avatar src={plan.hostAvatarUrl} name={plan.hostName} seed={activity.host_id} size={22} />
+              Host: {plan.hostName}
+            </span>
             <span className="mono" style={{ fontWeight: 600, color: STATUS_COLOR[plan.myStatus] || "var(--muted)" }}>
               {STATUS_LABEL[plan.myStatus] || plan.myStatus}
             </span>

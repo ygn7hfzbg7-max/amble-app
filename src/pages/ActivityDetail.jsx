@@ -6,12 +6,15 @@ import ErrorBanner from "../components/ErrorBanner.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import ActivityMap from "../components/ActivityMap.jsx";
 import ShareButton from "../components/ShareButton.jsx";
+import Avatar from "../components/Avatar.jsx";
+import { displayName } from "../lib/profileDisplay";
 
 export default function ActivityDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [activity, setActivity] = useState(null);
+  const [hostProfile, setHostProfile] = useState(null);
   const [acceptedCount, setAcceptedCount] = useState(0);
   const [loadError, setLoadError] = useState("");
   const [warning, setWarning] = useState("");
@@ -48,6 +51,20 @@ export default function ActivityDetail() {
 
         // Everything below is supplementary — if it fails, the activity
         // itself still renders with safe defaults (0 accepted, no request).
+        if (data?.host_id) {
+          const { data: host, error: hostError } = await supabase
+            .from("profiles")
+            .select("id, display_name, avatar_url")
+            .eq("id", data.host_id)
+            .single();
+          if (cancelled) return;
+          if (hostError) {
+            setWarning((w) => w || "Couldn't load host details.");
+          } else {
+            setHostProfile(host);
+          }
+        }
+
         const { data: acceptedRequests, error: acceptedError } = await supabase
           .from("requests")
           .select("id")
@@ -78,7 +95,7 @@ export default function ActivityDetail() {
         if (me && data?.host_id === me) {
           const { data: confirmedRequests, error: confirmedError } = await supabase
             .from("requests")
-            .select("id, traveller_id, profiles(display_name, email)")
+            .select("id, traveller_id, profiles(display_name, avatar_url)")
             .eq("activity_id", id)
             .eq("status", "accepted");
           if (cancelled) return;
@@ -165,7 +182,26 @@ export default function ActivityDetail() {
         }
       >
       <h1 style={{ fontSize: 22, marginBottom: 8 }}>{activity.title}</h1>
-      <p style={{ color: "var(--muted)", marginBottom: 20 }}>{activity.description}</p>
+      <p style={{ color: "var(--muted)", marginBottom: 16 }}>{activity.description}</p>
+
+      {activity.host_id && (
+        <div
+          className="card"
+          role="button"
+          tabIndex={0}
+          style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+          onClick={() => navigate(`/profile/${activity.host_id}`)}
+          onKeyDown={(e) => e.key === "Enter" && navigate(`/profile/${activity.host_id}`)}
+        >
+          <Avatar src={hostProfile?.avatar_url} name={hostProfile?.display_name} seed={activity.host_id} size={48} />
+          <div style={{ minWidth: 0 }}>
+            <div className="mono" style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Hosted by</div>
+            <div style={{ fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {displayName(hostProfile)}
+            </div>
+          </div>
+        </div>
+      )}
 
       <ErrorBanner message={warning} />
 
@@ -210,25 +246,24 @@ export default function ActivityDetail() {
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
               {confirmedAttendees.map((r) => {
                 const profile = r.profiles || {};
-                const name = profile.display_name || profile.email || "Someone";
+                const name = displayName(profile);
                 return (
                   <div
                     key={r.id}
                     className="card"
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}
                   >
-                    <div style={{ minWidth: 0 }}>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, cursor: "pointer" }}
+                      onClick={() => navigate(`/profile/${r.traveller_id}`)}
+                      onKeyDown={(e) => e.key === "Enter" && navigate(`/profile/${r.traveller_id}`)}
+                    >
+                      <Avatar src={profile.avatar_url} name={profile.display_name} seed={r.traveller_id} size={36} />
                       <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {name}
                       </div>
-                      {profile.email && (
-                        <div
-                          className="mono"
-                          style={{ fontSize: 12, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                        >
-                          {profile.email}
-                        </div>
-                      )}
                     </div>
                     <button
                       className="btn-secondary"

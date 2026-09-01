@@ -102,7 +102,7 @@ export default function Feed() {
 
         const { data, error } = await supabase
           .from("activities")
-          .select("*")
+          .select("*, profiles(display_name, avatar_url)")
           .gte("starts_at", new Date().toISOString())
           .order("starts_at", { ascending: true });
         if (error) {

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, MessageCircle } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
+import Avatar from "../components/Avatar.jsx";
+import { displayName } from "../lib/profileDisplay";
 
 const STATUS_LABEL = {
   pending: "Pending",
@@ -62,7 +64,7 @@ export default function ActivityRequests() {
 
         const { data: requestData, error: requestsError } = await supabase
           .from("requests")
-          .select("*, profiles(display_name, email, city, bio)")
+          .select("*, profiles(display_name, avatar_url, city, bio)")
           .eq("activity_id", id)
           .order("created_at", { ascending: true });
         if (requestsError) setError(requestsError.message);
@@ -109,12 +111,21 @@ export default function ActivityRequests() {
 
   const renderRequest = (r, { showAccept, showDecline, showRemove, showMessage } = {}) => {
     const profile = r.profiles || {};
-    const name = profile.display_name || profile.email || "Someone";
+    const name = displayName(profile);
     return (
       <div key={r.id} className="card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-          <h3 style={{ fontSize: 16 }}>{name}</h3>
-          <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: STATUS_COLOR[r.status] || "var(--muted)" }}>
+          <div
+            role="button"
+            tabIndex={0}
+            style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, cursor: "pointer" }}
+            onClick={() => navigate(`/profile/${r.traveller_id}`)}
+            onKeyDown={(e) => e.key === "Enter" && navigate(`/profile/${r.traveller_id}`)}
+          >
+            <Avatar src={profile.avatar_url} name={profile.display_name} seed={r.traveller_id} size={36} />
+            <h3 style={{ fontSize: 16, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</h3>
+          </div>
+          <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: STATUS_COLOR[r.status] || "var(--muted)", flexShrink: 0 }}>
             {STATUS_LABEL[r.status] || r.status}
           </span>
         </div>

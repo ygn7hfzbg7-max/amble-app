@@ -2,12 +2,15 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Mountain, UtensilsCrossed, Footprints, Clock, Users, MapPin, Navigation } from "lucide-react";
 import { formatDistance } from "../lib/geo";
+import Avatar from "./Avatar.jsx";
+import { displayName } from "../lib/profileDisplay";
 
 const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
 export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, distanceKm }) {
   const navigate = useNavigate();
   const Icon = TYPE_ICON[activity.type] || Footprints;
+  const host = activity.profiles;
 
   return (
     <div
@@ -18,14 +21,25 @@ export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, dista
       }}
       onClick={() => navigate(`/activity/${activity.id}`)}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Icon size={16} color={isFull ? "var(--muted)" : "var(--moss)"} />
-          <span className="mono" style={{ fontSize: 11, color: "var(--muted)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <Icon size={16} color={isFull ? "var(--muted)" : "var(--moss)"} style={{ flexShrink: 0 }} />
+          <span className="mono" style={{ fontSize: 11, color: "var(--muted)", flexShrink: 0 }}>
             {activity.type}
           </span>
+          {host && (
+            <>
+              <Avatar src={host.avatar_url} name={host.display_name} seed={activity.host_id} size={20} />
+              <span
+                className="mono"
+                style={{ fontSize: 11, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+              >
+                {displayName(host)}
+              </span>
+            </>
+          )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
           {isOwn && (
             <span
               className="mono"

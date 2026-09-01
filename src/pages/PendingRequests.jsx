@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
+import Avatar from "../components/Avatar.jsx";
+import { displayName } from "../lib/profileDisplay";
 
 const SECTION_HEADING_STYLE = {
   fontSize: 14,
@@ -62,7 +64,7 @@ export default function PendingRequests() {
 
         const { data, error: requestsError } = await supabase
           .from("requests")
-          .select("*, profiles(display_name, email, city, bio), activities(title, starts_at, meet_point, spots_total)")
+          .select("*, profiles(display_name, avatar_url, city, bio), activities(title, starts_at, meet_point, spots_total)")
           .in("activity_id", hostedIds)
           .in("status", ["pending", "waitlisted"])
           .order("created_at", { ascending: true });
@@ -108,17 +110,26 @@ export default function PendingRequests() {
   const renderRequest = (r) => {
     const profile = r.profiles || {};
     const activity = r.activities || {};
-    const name = profile.display_name || profile.email || "Someone";
+    const name = displayName(profile);
     const spotsFree = activity.spots_total != null
       ? activity.spots_total - (acceptedCounts[r.activity_id] || 0)
       : null;
     return (
       <div key={r.id} className="card">
-        <div style={{ marginBottom: 8 }}>
-          <h3 style={{ fontSize: 16, marginBottom: 2 }}>{name}</h3>
-          <p className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>
-            wants to join "{activity.title}" · {new Date(activity.starts_at).toLocaleString()}
-          </p>
+        <div
+          role="button"
+          tabIndex={0}
+          style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, cursor: "pointer" }}
+          onClick={() => navigate(`/profile/${r.traveller_id}`)}
+          onKeyDown={(e) => e.key === "Enter" && navigate(`/profile/${r.traveller_id}`)}
+        >
+          <Avatar src={profile.avatar_url} name={profile.display_name} seed={r.traveller_id} size={40} />
+          <div style={{ minWidth: 0 }}>
+            <h3 style={{ fontSize: 16, marginBottom: 2 }}>{name}</h3>
+            <p className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>
+              wants to join "{activity.title}" · {new Date(activity.starts_at).toLocaleString()}
+            </p>
+          </div>
         </div>
         {profile.city && (
           <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 4 }}>{profile.city}</p>
