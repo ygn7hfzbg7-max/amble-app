@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MapPin, Navigation } from "lucide-react";
 import { formatDistance } from "../lib/geo";
 import { getCategory } from "../lib/categories";
+import { formatFee } from "../lib/currency";
 import Avatar from "./Avatar.jsx";
 import RatingSummary from "./RatingSummary.jsx";
 import { displayName } from "../lib/profileDisplay";
@@ -60,7 +61,7 @@ export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, dista
             </div>
           ) : activity.fee ? (
             <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 17, color: "var(--brick)" }}>
-              £{activity.fee}
+              {formatFee(activity.fee, activity.currency)}
             </div>
           ) : (
             <div className="mono" style={{ fontSize: 13, color: "var(--muted)" }}>

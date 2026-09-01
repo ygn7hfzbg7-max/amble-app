@@ -6,6 +6,7 @@ import Avatar from "./Avatar.jsx";
 import RatingSummary from "./RatingSummary.jsx";
 import { getCategory } from "../lib/categories";
 import { formatTimeOnly } from "../lib/formatDateTime";
+import { formatFee } from "../lib/currency";
 
 const STATUS_LABEL = {
   pending: "Pending",
@@ -148,6 +149,11 @@ export default function PlanCard({ plan, unreadThreads, hostRating }) {
           <MapPin size={12} />
           {locationLabel}
         </span>
+        {activity.fee ? (
+          <span className="mono" style={{ flexShrink: 0, fontWeight: 600, color: "var(--brick)" }}>
+            {formatFee(activity.fee, activity.currency)}
+          </span>
+        ) : null}
       </div>
 
       {role === "hosting" ? (
