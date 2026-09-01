@@ -11,9 +11,8 @@ import { formatDateTime } from "../lib/formatDateTime";
 
 const SECTION_HEADING_STYLE = {
   fontSize: 14,
-  textTransform: "uppercase",
-  letterSpacing: 1,
-  color: "var(--muted)",
+  fontWeight: 700,
+  color: "var(--ink)",
   marginBottom: 10,
   marginTop: 8,
 };
@@ -127,36 +126,43 @@ export default function PendingRequests() {
       ? activity.spots_total - (acceptedCounts[r.activity_id] || 0)
       : null;
     return (
-      <div key={r.id} className="card">
+      <div key={r.id} className="listing-card" style={{ cursor: "default", marginBottom: 10 }}>
         <div
           role="button"
           tabIndex={0}
-          style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, cursor: "pointer" }}
+          style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
           onClick={() => navigate(`/profile/${r.traveller_id}`)}
           onKeyDown={(e) => e.key === "Enter" && navigate(`/profile/${r.traveller_id}`)}
         >
-          <Avatar src={profile.avatar_url} name={profile.display_name} seed={r.traveller_id} size={40} />
+          <Avatar src={profile.avatar_url} name={profile.display_name} seed={r.traveller_id} size={36} />
           <div style={{ minWidth: 0 }}>
-            <h3 style={{ fontSize: 16, marginBottom: 2 }}>{name}</h3>
-            <RatingSummary summary={ratings[r.traveller_id]} size={10} />
-            <p className="mono" style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-              wants to join "{activity.title}" · {formatDateTime(activity.starts_at)}
-            </p>
+            <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {name}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+              <RatingSummary summary={ratings[r.traveller_id]} size={10} />
+              {profile.city && (
+                <span className="mono" style={{ fontSize: 11, color: "var(--muted)" }}>{profile.city}</span>
+              )}
+            </div>
           </div>
         </div>
-        {profile.city && (
-          <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 4 }}>{profile.city}</p>
-        )}
-        {profile.bio && <p style={{ fontSize: 14, marginBottom: 12 }}>{profile.bio}</p>}
+        <div style={{ marginTop: 8, color: "var(--muted)", fontSize: 12 }}>
+          <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            Wants to join "{activity.title}"
+          </div>
+          <div className="mono" style={{ marginTop: 2 }}>{formatDateTime(activity.starts_at)}</div>
+        </div>
+        {profile.bio && <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 8, marginBottom: 0 }}>{profile.bio}</p>}
         {r.status === "waitlisted" && spotsFree > 0 && (
-          <p className="mono" style={{ color: "var(--gold)", fontSize: 12, marginBottom: 12 }}>
+          <p className="mono" style={{ color: "var(--gold)", fontSize: 12, marginTop: 8, marginBottom: 0 }}>
             A spot is open — you can accept them now.
           </p>
         )}
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
           <button
             className="btn-primary"
-            style={{ width: "auto", padding: "10px 18px" }}
+            style={{ width: "auto", padding: "8px 14px", fontSize: 13 }}
             disabled={actioningId === r.id || spotsFree <= 0}
             title={spotsFree <= 0 ? "No spots open right now" : undefined}
             onClick={() => respond(r, "accepted")}
@@ -165,7 +171,7 @@ export default function PendingRequests() {
           </button>
           <button
             className="btn-secondary"
-            style={{ width: "auto", padding: "10px 18px" }}
+            style={{ width: "auto", padding: "8px 14px", fontSize: 13 }}
             disabled={actioningId === r.id}
             onClick={() => respond(r, "declined")}
           >

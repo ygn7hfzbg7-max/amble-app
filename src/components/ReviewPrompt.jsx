@@ -32,7 +32,7 @@ export default function ReviewPrompt({ pending }) {
           How was your walk with {name}?
         </div>
         <div className="mono" style={{ fontSize: 11, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {pending.activityTitle} · Leave a review
+          {pending.activityTitle}
         </div>
       </div>
       <Star size={18} color="var(--gold)" style={{ flexShrink: 0 }} />

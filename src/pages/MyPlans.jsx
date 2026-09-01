@@ -6,7 +6,8 @@ import ErrorBanner from "../components/ErrorBanner.jsx";
 import PlanCard from "../components/PlanCard.jsx";
 import ReviewPrompt from "../components/ReviewPrompt.jsx";
 import { displayName as profileName } from "../lib/profileDisplay";
-import { fetchPendingReviews } from "../lib/reviews";
+import { fetchPendingReviews, fetchRatingSummaries } from "../lib/reviews";
+import { groupByDay } from "../lib/groupByDay";
 
 function startOfDay(date) {
   const d = new Date(date);
@@ -16,24 +17,28 @@ function startOfDay(date) {
 
 const SECTION_HEADING_STYLE = {
   fontSize: 14,
-  textTransform: "uppercase",
-  letterSpacing: 1,
-  color: "var(--muted)",
+  fontWeight: 700,
+  color: "var(--ink)",
   marginBottom: 10,
 };
 
-function Section({ title, plans, unreadThreads }) {
-  if (plans.length === 0) return null;
-  return (
-    <>
-      <h2 className="mono" style={SECTION_HEADING_STYLE}>
-        {title}
-      </h2>
-      {plans.map((plan) => (
-        <PlanCard key={`${plan.role}-${plan.activity.id}`} plan={plan} unreadThreads={unreadThreads} />
-      ))}
-    </>
-  );
+function DayGroups({ plans, unreadThreads, hostRatings }) {
+  const groups = groupByDay(plans, (plan) => plan.activity.starts_at);
+  return groups.map((group) => (
+    <div key={group.key}>
+      <h2 className="day-heading">{group.heading}</h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {group.items.map((plan) => (
+          <PlanCard
+            key={`${plan.role}-${plan.activity.id}`}
+            plan={plan}
+            unreadThreads={unreadThreads}
+            hostRating={hostRatings[plan.activity.host_id]}
+          />
+        ))}
+      </div>
+    </div>
+  ));
 }
 
 export default function MyPlans() {
@@ -42,6 +47,7 @@ export default function MyPlans() {
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingReviews, setPendingReviews] = useState([]);
   const [unreadThreads, setUnreadThreads] = useState(new Set());
+  const [hostRatings, setHostRatings] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showPast, setShowPast] = useState(false);
@@ -122,6 +128,13 @@ export default function MyPlans() {
         setPlans(combined);
         setPendingCount(hostingPlans.reduce((sum, p) => sum + p.pendingCount, 0));
 
+        try {
+          const hostIds = joiningPlans.map((p) => p.activity.host_id);
+          setHostRatings(await fetchRatingSummaries(supabase, hostIds));
+        } catch (ratingsErr) {
+          console.error("Couldn't load host ratings:", ratingsErr.message);
+        }
+
         const { data: unreadMessages, error: unreadError } = await supabase
           .from("messages")
           .select("activity_id, sender_id")
@@ -145,22 +158,14 @@ export default function MyPlans() {
     })();
   }, []);
 
-  const now = new Date();
-  const todayStart = startOfDay(now);
-  const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-  const weekEnd = new Date(todayStart);
-  weekEnd.setDate(weekEnd.getDate() + 7);
-
-  const groups = { today: [], thisWeek: [], later: [], past: [] };
+  const todayStart = startOfDay(new Date());
+  const upcoming = [];
+  const past = [];
   for (const plan of plans) {
     const start = new Date(plan.activity.starts_at);
-    if (start < todayStart) groups.past.push(plan);
-    else if (start < tomorrowStart) groups.today.push(plan);
-    else if (start < weekEnd) groups.thisWeek.push(plan);
-    else groups.later.push(plan);
+    (start < todayStart ? past : upcoming).push(plan);
   }
-  groups.past.reverse();
+  past.reverse();
 
   const hasAnyPlans = plans.length > 0;
 
@@ -228,11 +233,11 @@ export default function MyPlans() {
 
       {!loading && (
         <>
-          <Section title="Today" plans={groups.today} unreadThreads={unreadThreads} />
-          <Section title="This week" plans={groups.thisWeek} unreadThreads={unreadThreads} />
-          <Section title="Later" plans={groups.later} unreadThreads={unreadThreads} />
+          {upcoming.length > 0 && (
+            <DayGroups plans={upcoming} unreadThreads={unreadThreads} hostRatings={hostRatings} />
+          )}
 
-          {groups.past.length > 0 && (
+          {past.length > 0 && (
             <div style={{ marginTop: 12 }}>
               <button
                 onClick={() => setShowPast((s) => !s)}
@@ -247,11 +252,9 @@ export default function MyPlans() {
                   marginBottom: showPast ? 12 : 0,
                 }}
               >
-                {showPast ? "Hide" : "Show"} past ({groups.past.length})
+                {showPast ? "Hide" : "Show"} past ({past.length})
               </button>
-              {showPast && groups.past.map((plan) => (
-                <PlanCard key={`${plan.role}-${plan.activity.id}`} plan={plan} unreadThreads={unreadThreads} />
-              ))}
+              {showPast && <DayGroups plans={past} unreadThreads={unreadThreads} hostRatings={hostRatings} />}
             </div>
           )}
         </>

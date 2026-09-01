@@ -8,6 +8,7 @@ import LocationFilter from "../components/LocationFilter.jsx";
 import { distanceKm } from "../lib/geo";
 import { fetchPendingReviews, fetchRatingSummaries } from "../lib/reviews";
 import { formatDateOnly } from "../lib/formatDateTime";
+import { groupByDay } from "../lib/groupByDay";
 
 const DATE_CHIPS = [
   { key: "all", label: "All upcoming" },
@@ -221,9 +222,12 @@ export default function Feed() {
     });
   }, [activities, userCoords, nearMe]);
 
+  // Stays in date order (activitiesWithDistance is already ascending by
+  // starts_at) so day headings group cleanly; distance sorting, when
+  // active, is applied within each day group instead of flattening it.
   const visibleActivities = useMemo(() => {
     const range = dateRangeFor(dateFilter, customDate);
-    let list = activitiesWithDistance.filter((a) => {
+    return activitiesWithDistance.filter((a) => {
       if (range) {
         const startsAt = new Date(a.starts_at);
         if (startsAt < range[0] || startsAt >= range[1]) return false;
@@ -231,15 +235,20 @@ export default function Feed() {
       if (cityFilter && a.city !== cityFilter) return false;
       return true;
     });
-    if (nearMe && userCoords) {
-      list = [...list].sort((a, b) => {
+  }, [activitiesWithDistance, dateFilter, customDate, cityFilter]);
+
+  const dayGroups = useMemo(() => {
+    const groups = groupByDay(visibleActivities, (a) => a.starts_at);
+    if (!nearMe || !userCoords) return groups;
+    return groups.map((group) => ({
+      ...group,
+      items: [...group.items].sort((a, b) => {
         const da = typeof a.distanceKm === "number" ? a.distanceKm : Infinity;
         const db = typeof b.distanceKm === "number" ? b.distanceKm : Infinity;
         return da - db;
-      });
-    }
-    return list;
-  }, [activitiesWithDistance, dateFilter, customDate, cityFilter, nearMe, userCoords]);
+      }),
+    }));
+  }, [visibleActivities, nearMe, userCoords]);
 
   const selectChip = (key) => {
     setDateFilter(key);
@@ -533,16 +542,23 @@ export default function Feed() {
           </div>
         </div>
       )}
-      {visibleActivities.map((a) => (
-        <ActivityCard
-          key={a.id}
-          activity={a}
-          spotsLeft={a.spots_total - a.spotsTaken}
-          isFull={a.spotsTaken >= a.spots_total}
-          isOwn={a.isOwn}
-          distanceKm={a.distanceKm}
-          hostRating={hostRatings[a.host_id]}
-        />
+      {dayGroups.map((group) => (
+        <div key={group.key}>
+          <h2 className="day-heading">{group.heading}</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {group.items.map((a) => (
+              <ActivityCard
+                key={a.id}
+                activity={a}
+                spotsLeft={a.spots_total - a.spotsTaken}
+                isFull={a.spotsTaken >= a.spots_total}
+                isOwn={a.isOwn}
+                distanceKm={a.distanceKm}
+                hostRating={hostRatings[a.host_id]}
+              />
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );

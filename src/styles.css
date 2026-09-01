@@ -68,6 +68,43 @@ h1, h2, h3, button {
   margin-bottom: 16px;
 }
 
+/* Day-grouped listings (Feed, My Plans): denser than .card, spacing comes
+   from the flex gap around them rather than a fixed margin-bottom. */
+.listing-card {
+  background: var(--white);
+  border: 1px solid var(--paper-deep);
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+}
+
+.day-heading {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 22px 0 10px;
+}
+
+.listing-hairline {
+  border-top: 1px solid var(--paper-deep);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+/* Compact avatar/name/rating rows used in request and attendee lists. */
+.person-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+.person-row + .person-row {
+  border-top: 1px solid var(--paper-deep);
+}
+
 input, textarea, select {
   width: 100%;
   padding: 12px 14px;
