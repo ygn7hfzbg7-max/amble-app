@@ -10,6 +10,7 @@ import Avatar from "../components/Avatar.jsx";
 import RatingSummary from "../components/RatingSummary.jsx";
 import { displayName } from "../lib/profileDisplay";
 import { fetchRatingSummary, fetchRatingSummaries } from "../lib/reviews";
+import { formatDateTime } from "../lib/formatDateTime";
 
 export default function ActivityDetail() {
   const { id } = useParams();
@@ -237,7 +238,7 @@ export default function ActivityDetail() {
       )}
 
       <div className="card">
-        <p><strong>When:</strong> {activity.starts_at ? new Date(activity.starts_at).toLocaleString() : "TBD"}</p>
+        <p><strong>When:</strong> {activity.starts_at ? formatDateTime(activity.starts_at) : "TBD"}</p>
         <p><strong>Meet at:</strong> {meetPointLabel}</p>
         <p><strong>Fee:</strong> {activity.fee ? `£${activity.fee}` : "Free"}</p>
         <p>
@@ -313,7 +314,7 @@ export default function ActivityDetail() {
             <>
               <p style={{ color: "var(--moss)", fontWeight: 600 }}>
                 You're confirmed! Meet at {activity.meet_point || "the spot shared by the host"} on{" "}
-                {activity.starts_at ? new Date(activity.starts_at).toLocaleString() : "the scheduled time"}.
+                {activity.starts_at ? formatDateTime(activity.starts_at) : "the scheduled time"}.
               </p>
               {activity.host_id && (
                 <button

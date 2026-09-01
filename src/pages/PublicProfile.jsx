@@ -8,6 +8,7 @@ import ActivityCard from "../components/ActivityCard.jsx";
 import StarRating from "../components/StarRating.jsx";
 import RatingSummary from "../components/RatingSummary.jsx";
 import { displayName, memberSince } from "../lib/profileDisplay";
+import { formatDateTime } from "../lib/formatDateTime";
 
 const SECTION_HEADING_STYLE = {
   fontSize: 14,
@@ -181,7 +182,7 @@ export default function PublicProfile() {
                       {displayName(reviewer)}
                     </div>
                     <div className="mono" style={{ fontSize: 11, color: "var(--muted)" }}>
-                      {new Date(r.created_at).toLocaleDateString()}
+                      {formatDateTime(r.created_at)}
                     </div>
                   </div>
                   <StarRating value={r.rating} size={14} />

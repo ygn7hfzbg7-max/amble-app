@@ -7,6 +7,7 @@ import Avatar from "../components/Avatar.jsx";
 import RatingSummary from "../components/RatingSummary.jsx";
 import { displayName } from "../lib/profileDisplay";
 import { fetchRatingSummaries } from "../lib/reviews";
+import { formatDateTime } from "../lib/formatDateTime";
 
 const SECTION_HEADING_STYLE = {
   fontSize: 14,
@@ -139,7 +140,7 @@ export default function PendingRequests() {
             <h3 style={{ fontSize: 16, marginBottom: 2 }}>{name}</h3>
             <RatingSummary summary={ratings[r.traveller_id]} size={10} />
             <p className="mono" style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
-              wants to join "{activity.title}" · {new Date(activity.starts_at).toLocaleString()}
+              wants to join "{activity.title}" · {formatDateTime(activity.starts_at)}
             </p>
           </div>
         </div>

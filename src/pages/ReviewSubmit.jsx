@@ -7,6 +7,7 @@ import Avatar from "../components/Avatar.jsx";
 import StarRating from "../components/StarRating.jsx";
 import { displayName } from "../lib/profileDisplay";
 import { HOST_TAGS, TRAVELLER_TAGS, reviewWindowEnd, hasActivityStarted } from "../lib/reviews";
+import { formatDateTime } from "../lib/formatDateTime";
 
 function tagPillStyle(active) {
   return {
@@ -219,7 +220,7 @@ export default function ReviewSubmit() {
 
       <h1 style={{ fontSize: 22, marginBottom: 4 }}>Review {name}</h1>
       <p style={{ color: "var(--muted)", marginBottom: 20 }}>
-        {activity.title} · {new Date(activity.starts_at).toLocaleDateString()}
+        {activity.title} · {formatDateTime(activity.starts_at)}
       </p>
 
       {!started && <ErrorBanner message="You'll be able to review this once the activity has happened." />}
@@ -254,7 +255,7 @@ export default function ReviewSubmit() {
                 <Lock size={13} />
                 {locked
                   ? "This review is now visible and can no longer be edited."
-                  : `Saved — it stays hidden until ${name} submits theirs too, or ${deadline.toLocaleDateString()}, whichever comes first.`}
+                  : `Saved — it stays hidden until ${name} submits theirs too, or ${formatDateTime(deadline)}, whichever comes first.`}
               </p>
             </div>
           ) : (
@@ -300,7 +301,7 @@ export default function ReviewSubmit() {
               >
                 <Lock size={14} style={{ flexShrink: 0, marginTop: 1 }} color="var(--gold)" />
                 <span>
-                  Your review stays hidden until {name} submits theirs too, or {deadline.toLocaleDateString()} — whichever comes
+                  Your review stays hidden until {name} submits theirs too, or {formatDateTime(deadline)} — whichever comes
                   first. This keeps reviews honest, not retaliatory.
                 </span>
               </div>
