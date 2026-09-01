@@ -12,6 +12,7 @@ import { displayName } from "../lib/profileDisplay";
 import { fetchRatingSummary, fetchRatingSummaries } from "../lib/reviews";
 import { formatDateTime } from "../lib/formatDateTime";
 import { getCategory } from "../lib/categories";
+import { formatFee } from "../lib/currency";
 
 export default function ActivityDetail() {
   const { id } = useParams();
@@ -266,7 +267,7 @@ export default function ActivityDetail() {
         </div>
         <div>
           <div className="mono" style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Fee</div>
-          <div style={{ fontSize: 14 }}>{activity.fee ? `£${activity.fee}` : "Free"}</div>
+          <div style={{ fontSize: 14 }}>{activity.fee ? formatFee(activity.fee, activity.currency) : "Free"}</div>
         </div>
         <div>
           <div className="mono" style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Spots</div>

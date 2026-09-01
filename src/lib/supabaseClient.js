@@ -50,6 +50,9 @@ export async function ensureProfile(user) {
     starts_at     timestamptz
     spots_total   int
     fee           numeric default 0
+    currency      text default 'GBP'   -- ISO 4217 code, e.g. 'GBP' | 'EUR' | 'USD' — set
+                                          -- by the host when posting; never converted, since
+                                          -- the fee is paid in person in this currency
     created_at    timestamptz default now()
 
   requests

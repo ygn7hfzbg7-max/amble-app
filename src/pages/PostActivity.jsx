@@ -5,6 +5,8 @@ import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import LocationPicker from "../components/LocationPicker.jsx";
 import CategoryPicker from "../components/CategoryPicker.jsx";
+import CurrencySelector from "../components/CurrencySelector.jsx";
+import { DEFAULT_CURRENCY, currencyForCountry } from "../lib/currency";
 
 export default function PostActivity() {
   const navigate = useNavigate();
@@ -16,8 +18,10 @@ export default function PostActivity() {
     starts_at: "",
     spots_total: 2,
     fee: 0,
+    currency: DEFAULT_CURRENCY,
   });
   const [location, setLocation] = useState(null);
+  const [currencyTouched, setCurrencyTouched] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -28,6 +32,11 @@ export default function PostActivity() {
     setLocation(loc);
     if (loc && !form.meet_point) {
       setForm((f) => ({ ...f, meet_point: loc.display_name.split(",")[0] }));
+    }
+    // Suggest the currency the host is actually paid in based on where the
+    // activity is happening, but don't clobber a choice they already made.
+    if (loc && !currencyTouched) {
+      setForm((f) => ({ ...f, currency: currencyForCountry(loc.country) }));
     }
   };
 
@@ -43,6 +52,7 @@ export default function PostActivity() {
       }
       const { error } = await supabase.from("activities").insert({
         ...form,
+        fee: form.fee === "" ? 0 : Number(form.fee),
         city: location?.city || null,
         country: location?.country || null,
         latitude: location?.latitude ?? null,
@@ -87,8 +97,25 @@ export default function PostActivity() {
         <label className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>Spots (max 3)</label>
         <input type="number" min={1} max={3} value={form.spots_total} onChange={update("spots_total")} />
 
-        <label className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>Fee (£, 0 = free)</label>
-        <input type="number" min={0} max={20} value={form.fee} onChange={update("fee")} />
+        <label className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>Fee (0 = free)</label>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <input
+            type="number"
+            min={0}
+            max={20}
+            step="0.01"
+            value={form.fee}
+            onChange={update("fee")}
+            style={{ marginBottom: 0, flex: 1 }}
+          />
+          <CurrencySelector
+            value={form.currency}
+            onChange={(currency) => {
+              setCurrencyTouched(true);
+              setForm((f) => ({ ...f, currency }));
+            }}
+          />
+        </div>
 
         <ErrorBanner message={error} />
         <button className="btn-primary" type="submit" disabled={submitting}>
