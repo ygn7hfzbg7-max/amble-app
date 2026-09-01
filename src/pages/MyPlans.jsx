@@ -4,16 +4,12 @@ import { ChevronLeft, Users } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import PlanCard from "../components/PlanCard.jsx";
+import { displayName as profileName } from "../lib/profileDisplay";
 
 function startOfDay(date) {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   return d;
-}
-
-function profileName(profile) {
-  if (!profile) return "Someone";
-  return profile.display_name || profile.email || "Someone";
 }
 
 const SECTION_HEADING_STYLE = {
@@ -71,7 +67,7 @@ export default function MyPlans() {
         if (hostedIds.length > 0) {
           const { data: hostedRequests, error: hostedRequestsError } = await supabase
             .from("requests")
-            .select("*, profiles(display_name, email)")
+            .select("*, profiles(display_name, avatar_url)")
             .in("activity_id", hostedIds);
           if (hostedRequestsError) {
             setError(hostedRequestsError.message);
@@ -92,6 +88,7 @@ export default function MyPlans() {
               requestId: r.id,
               travellerId: r.traveller_id,
               name: profileName(r.profiles),
+              avatarUrl: r.profiles?.avatar_url,
             })),
             pendingCount: activityRequests.filter((r) => r.status === "pending" || r.status === "waitlisted").length,
           };
@@ -99,7 +96,7 @@ export default function MyPlans() {
 
         const { data: myRequests, error: myRequestsError } = await supabase
           .from("requests")
-          .select("*, activities(*, profiles(display_name, email))")
+          .select("*, activities(*, profiles(display_name, avatar_url))")
           .eq("traveller_id", userId);
         if (myRequestsError) {
           setError(myRequestsError.message);
@@ -113,6 +110,7 @@ export default function MyPlans() {
             activity: r.activities,
             myStatus: r.status,
             hostName: profileName(r.activities.profiles),
+            hostAvatarUrl: r.activities.profiles?.avatar_url,
           }));
 
         const combined = [...hostingPlans, ...joiningPlans].sort(

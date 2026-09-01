@@ -26,9 +26,15 @@ export async function ensureProfile(user) {
     display_name  text
     city          text
     bio           text
-    avatar_url    text
+    languages     text          -- free text, e.g. "English, Spanish"
+    avatar_url    text          -- public URL of the file in the "avatars" Storage bucket
     tier          text   default 'Basic'   -- Basic | Verified | Trusted
     created_at    timestamptz default now()
+
+    "email" is stored for account/auth purposes only — never render it as a
+    user-facing label. Anywhere a person's name is shown, use display_name
+    with a neutral fallback ("Amble member") instead; see
+    src/lib/profileDisplay.js.
 
   activities
     id            uuid  primary key default gen_random_uuid()

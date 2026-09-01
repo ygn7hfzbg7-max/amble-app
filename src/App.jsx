@@ -8,6 +8,7 @@ import ActivityRequests from "./pages/ActivityRequests.jsx";
 import PostActivity from "./pages/PostActivity.jsx";
 import Profile from "./pages/Profile.jsx";
 import EditProfile from "./pages/EditProfile.jsx";
+import PublicProfile from "./pages/PublicProfile.jsx";
 import MyPlans from "./pages/MyPlans.jsx";
 import PendingRequests from "./pages/PendingRequests.jsx";
 import ChatThread from "./pages/ChatThread.jsx";
@@ -81,6 +82,9 @@ export default function App() {
             path="/profile/edit"
             element={session ? <EditProfile /> : <Navigate to="/login" />}
           />
+          {/* Public so a profile link works for someone who isn't logged in,
+              same as the activity detail page above. */}
+          <Route path="/profile/:userId" element={<PublicProfile />} />
         </Routes>
       </div>
     </BrowserRouter>

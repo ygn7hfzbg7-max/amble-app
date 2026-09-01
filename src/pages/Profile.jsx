@@ -1,19 +1,37 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Eye } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
+import Avatar from "../components/Avatar.jsx";
+import { displayName } from "../lib/profileDisplay";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const [userId, setUserId] = useState(null);
   const [email, setEmail] = useState("");
+  const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data, error }) => {
-      if (error) setError(error.message);
-      else setEmail(data.user?.email || "");
-    });
+    (async () => {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      setUserId(data.user?.id || null);
+      setEmail(data.user?.email || "");
+      if (data.user?.id) {
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("display_name, avatar_url")
+          .eq("id", data.user.id)
+          .single();
+        if (profileError) setError(profileError.message);
+        else setProfile(profileData);
+      }
+    })();
   }, []);
 
   const handleSignOut = async () => {
@@ -32,9 +50,28 @@ export default function Profile() {
       >
         <ChevronLeft size={16} /> back
       </button>
-      <h1 style={{ fontSize: 22, marginBottom: 12 }}>Your profile</h1>
-      <p style={{ color: "var(--muted)", marginBottom: 24 }}>{email}</p>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
+        <Avatar src={profile?.avatar_url} name={profile?.display_name} seed={userId} size={56} />
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ fontSize: 20, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {displayName(profile)}
+          </h1>
+          <p className="mono" style={{ color: "var(--muted)", fontSize: 12 }}>{email}</p>
+        </div>
+      </div>
+
       <ErrorBanner message={error} />
+
+      {userId && (
+        <button
+          className="btn-secondary"
+          style={{ marginTop: 16, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          onClick={() => navigate(`/profile/${userId}`)}
+        >
+          <Eye size={16} /> View your public profile
+        </button>
+      )}
       <button
         className="btn-secondary"
         style={{ marginBottom: 12 }}
