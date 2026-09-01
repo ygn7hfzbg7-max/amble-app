@@ -4,7 +4,9 @@ import { ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import Avatar from "../components/Avatar.jsx";
+import RatingSummary from "../components/RatingSummary.jsx";
 import { displayName } from "../lib/profileDisplay";
+import { fetchRatingSummaries } from "../lib/reviews";
 
 const SECTION_HEADING_STYLE = {
   fontSize: 14,
@@ -22,6 +24,7 @@ export default function PendingRequests() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actioningId, setActioningId] = useState(null);
+  const [ratings, setRatings] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -68,8 +71,16 @@ export default function PendingRequests() {
           .in("activity_id", hostedIds)
           .in("status", ["pending", "waitlisted"])
           .order("created_at", { ascending: true });
-        if (requestsError) setError(requestsError.message);
-        else setRequests(data || []);
+        if (requestsError) {
+          setError(requestsError.message);
+        } else {
+          setRequests(data || []);
+          try {
+            setRatings(await fetchRatingSummaries(supabase, (data || []).map((r) => r.traveller_id)));
+          } catch (ratingsErr) {
+            console.error("Couldn't load ratings:", ratingsErr.message);
+          }
+        }
       } catch (err) {
         setError(err.message || "Couldn't load requests. Please try again.");
       } finally {
@@ -126,7 +137,8 @@ export default function PendingRequests() {
           <Avatar src={profile.avatar_url} name={profile.display_name} seed={r.traveller_id} size={40} />
           <div style={{ minWidth: 0 }}>
             <h3 style={{ fontSize: 16, marginBottom: 2 }}>{name}</h3>
-            <p className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>
+            <RatingSummary summary={ratings[r.traveller_id]} size={10} />
+            <p className="mono" style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
               wants to join "{activity.title}" · {new Date(activity.starts_at).toLocaleString()}
             </p>
           </div>

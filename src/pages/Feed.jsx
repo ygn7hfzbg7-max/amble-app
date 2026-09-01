@@ -6,6 +6,7 @@ import ActivityCard from "../components/ActivityCard.jsx";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import LocationFilter from "../components/LocationFilter.jsx";
 import { distanceKm } from "../lib/geo";
+import { fetchPendingReviews, fetchRatingSummaries } from "../lib/reviews";
 
 const DATE_CHIPS = [
   { key: "all", label: "All upcoming" },
@@ -88,6 +89,8 @@ export default function Feed() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingReviewCount, setPendingReviewCount] = useState(0);
+  const [hostRatings, setHostRatings] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -135,6 +138,14 @@ export default function Feed() {
         }));
 
         setActivities(withSpots);
+
+        const hostIds = upcoming.map((a) => a.host_id);
+        try {
+          setHostRatings(await fetchRatingSummaries(supabase, hostIds));
+        } catch (ratingsErr) {
+          // Non-fatal — cards just fall back to "New to Amble" styling.
+          console.error("Couldn't load host ratings:", ratingsErr.message);
+        }
       } catch (err) {
         setError(err.message || "Couldn't load activities. Please try again.");
       } finally {
@@ -160,6 +171,13 @@ export default function Feed() {
         return;
       }
       setUnreadCount(count || 0);
+
+      try {
+        const pending = await fetchPendingReviews(supabase, userId);
+        setPendingReviewCount(pending.length);
+      } catch (reviewsErr) {
+        setError(reviewsErr.message || "Couldn't load your pending reviews.");
+      }
 
       channel = supabase
         .channel(`unread-messages-${userId}`)
@@ -301,7 +319,7 @@ export default function Feed() {
             >
               <ClipboardList size={16} />
             </button>
-            {unreadCount > 0 && (
+            {unreadCount + pendingReviewCount > 0 && (
               <span
                 className="mono"
                 style={{
@@ -321,7 +339,7 @@ export default function Feed() {
                   padding: "0 3px",
                 }}
               >
-                {unreadCount > 9 ? "9+" : unreadCount}
+                {unreadCount + pendingReviewCount > 9 ? "9+" : unreadCount + pendingReviewCount}
               </span>
             )}
           </div>
@@ -525,6 +543,7 @@ export default function Feed() {
           isFull={a.spotsTaken >= a.spots_total}
           isOwn={a.isOwn}
           distanceKm={a.distanceKm}
+          hostRating={hostRatings[a.host_id]}
         />
       ))}
     </div>

@@ -4,7 +4,9 @@ import { ChevronLeft, Users } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import PlanCard from "../components/PlanCard.jsx";
+import ReviewPrompt from "../components/ReviewPrompt.jsx";
 import { displayName as profileName } from "../lib/profileDisplay";
+import { fetchPendingReviews } from "../lib/reviews";
 
 function startOfDay(date) {
   const d = new Date(date);
@@ -38,6 +40,7 @@ export default function MyPlans() {
   const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingReviews, setPendingReviews] = useState([]);
   const [unreadThreads, setUnreadThreads] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -131,6 +134,9 @@ export default function MyPlans() {
         setUnreadThreads(
           new Set((unreadMessages || []).map((m) => `${m.activity_id}:${m.sender_id}`))
         );
+
+        const pending = await fetchPendingReviews(supabase, userId);
+        setPendingReviews(pending);
       } catch (err) {
         setError(err.message || "Couldn't load your plans. Please try again.");
       } finally {
@@ -190,6 +196,17 @@ export default function MyPlans() {
           <span className="mono" style={{ color: "var(--white)", fontSize: 13, fontWeight: 600 }}>
             {pendingCount} {pendingCount === 1 ? "person wants" : "people want"} to join your plans
           </span>
+        </div>
+      )}
+
+      {!loading && pendingReviews.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <h2 className="mono" style={SECTION_HEADING_STYLE}>
+            Leave a review
+          </h2>
+          {pendingReviews.map((pr) => (
+            <ReviewPrompt key={`${pr.activityId}-${pr.revieweeId}`} pending={pr} />
+          ))}
         </div>
       )}
 

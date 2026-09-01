@@ -4,7 +4,9 @@ import { ChevronLeft, MessageCircle } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import Avatar from "../components/Avatar.jsx";
+import RatingSummary from "../components/RatingSummary.jsx";
 import { displayName } from "../lib/profileDisplay";
+import { fetchRatingSummaries } from "../lib/reviews";
 
 const STATUS_LABEL = {
   pending: "Pending",
@@ -37,6 +39,7 @@ export default function ActivityRequests() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actioningId, setActioningId] = useState(null);
+  const [ratings, setRatings] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -67,8 +70,16 @@ export default function ActivityRequests() {
           .select("*, profiles(display_name, avatar_url, city, bio)")
           .eq("activity_id", id)
           .order("created_at", { ascending: true });
-        if (requestsError) setError(requestsError.message);
-        else setRequests(requestData || []);
+        if (requestsError) {
+          setError(requestsError.message);
+        } else {
+          setRequests(requestData || []);
+          try {
+            setRatings(await fetchRatingSummaries(supabase, (requestData || []).map((r) => r.traveller_id)));
+          } catch (ratingsErr) {
+            console.error("Couldn't load ratings:", ratingsErr.message);
+          }
+        }
       } catch (err) {
         setError(err.message || "Couldn't load requests. Please try again.");
       } finally {
@@ -123,7 +134,10 @@ export default function ActivityRequests() {
             onKeyDown={(e) => e.key === "Enter" && navigate(`/profile/${r.traveller_id}`)}
           >
             <Avatar src={profile.avatar_url} name={profile.display_name} seed={r.traveller_id} size={36} />
-            <h3 style={{ fontSize: 16, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</h3>
+            <div style={{ minWidth: 0 }}>
+              <h3 style={{ fontSize: 16, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 2 }}>{name}</h3>
+              <RatingSummary summary={ratings[r.traveller_id]} size={10} />
+            </div>
           </div>
           <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: STATUS_COLOR[r.status] || "var(--muted)", flexShrink: 0 }}>
             {STATUS_LABEL[r.status] || r.status}
