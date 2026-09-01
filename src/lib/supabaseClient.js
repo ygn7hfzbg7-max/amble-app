@@ -62,12 +62,26 @@ export async function ensureProfile(user) {
   reviews
     id            uuid primary key default gen_random_uuid()
     activity_id   uuid references activities.id
-    from_id       uuid references profiles.id
-    to_id         uuid references profiles.id
-    rating        int
-    tags          text[]
-    note          text
+    reviewer_id   uuid references profiles.id   -- who wrote the review
+    reviewee_id   uuid references profiles.id   -- who it's about
+    rating        int                            -- 1-5
+    tags          text[]                         -- structured tags, direction-specific
+    note          text                           -- optional free text
     created_at    timestamptz default now()
+    visible_at    timestamptz                    -- server-set: activities.starts_at + 14 days;
+                                                   -- the *deadline*, not a toggle — a review also
+                                                   -- becomes readable the moment its counterpart
+                                                   -- (same activity, reviewer/reviewee swapped) exists,
+                                                   -- via the read RLS policy below, so nothing needs
+                                                   -- to flip this column early. One row per
+                                                   -- (activity_id, reviewer_id, reviewee_id) — see the
+                                                   -- full migration (table + trigger + RLS) in the PR
+                                                   -- description for this feature.
+
+    Only possible between people an accepted "requests" row actually
+    matched on that activity (host <-> that confirmed traveller), and only
+    once the activity's starts_at has passed. Hidden until both sides have
+    submitted or the 14-day window closes — see visible_at above.
 
   messages
     id            uuid primary key default gen_random_uuid()
@@ -94,7 +108,13 @@ export async function ensureProfile(user) {
   - a user can insert/update only their own profiles row (id = auth.uid()),
     which is what the "ensureProfile" upsert above and the profile edit
     screen rely on
-  - only participants in an activity can insert a review about each other
+  - a review can only be inserted by its reviewer, about the activity's
+    other confirmed party (host <-> that accepted traveller — nobody
+    else), and only once the activity has started; editable by its
+    reviewer until it becomes visible, then locked; readable by anyone
+    once visible (both sides submitted, or 14 days after starts_at),
+    otherwise only by its own reviewer — see the reviews migration for
+    the exact policies and the review_is_visible() helper function
   - a user can read a message only if they are its sender or recipient
   - a user can insert a message only as themselves, and only when an
     accepted request links them to the other party on that activity

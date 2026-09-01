@@ -12,6 +12,7 @@ import PublicProfile from "./pages/PublicProfile.jsx";
 import MyPlans from "./pages/MyPlans.jsx";
 import PendingRequests from "./pages/PendingRequests.jsx";
 import ChatThread from "./pages/ChatThread.jsx";
+import ReviewSubmit from "./pages/ReviewSubmit.jsx";
 
 export default function App() {
   const [session, setSession] = useState(undefined); // undefined = loading
@@ -73,6 +74,10 @@ export default function App() {
           <Route
             path="/chat/:activityId/:otherId"
             element={session ? <ChatThread /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/activity/:activityId/review/:revieweeId"
+            element={session ? <ReviewSubmit /> : <Navigate to="/login" />}
           />
           <Route
             path="/profile"

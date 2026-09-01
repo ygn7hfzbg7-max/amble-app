@@ -7,7 +7,9 @@ import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import ActivityMap from "../components/ActivityMap.jsx";
 import ShareButton from "../components/ShareButton.jsx";
 import Avatar from "../components/Avatar.jsx";
+import RatingSummary from "../components/RatingSummary.jsx";
 import { displayName } from "../lib/profileDisplay";
+import { fetchRatingSummary, fetchRatingSummaries } from "../lib/reviews";
 
 export default function ActivityDetail() {
   const { id } = useParams();
@@ -23,6 +25,8 @@ export default function ActivityDetail() {
   const [requestError, setRequestError] = useState("");
   const [requesting, setRequesting] = useState(false);
   const [confirmedAttendees, setConfirmedAttendees] = useState([]);
+  const [hostRating, setHostRating] = useState(null);
+  const [attendeeRatings, setAttendeeRatings] = useState({});
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +66,12 @@ export default function ActivityDetail() {
             setWarning((w) => w || "Couldn't load host details.");
           } else {
             setHostProfile(host);
+          }
+          try {
+            const summary = await fetchRatingSummary(supabase, data.host_id);
+            if (!cancelled) setHostRating(summary);
+          } catch (ratingErr) {
+            console.error("Couldn't load host rating:", ratingErr.message);
           }
         }
 
@@ -103,6 +113,15 @@ export default function ActivityDetail() {
             setWarning((w) => w || "Couldn't load confirmed attendees.");
           } else {
             setConfirmedAttendees(confirmedRequests || []);
+            try {
+              const summaries = await fetchRatingSummaries(
+                supabase,
+                (confirmedRequests || []).map((r) => r.traveller_id)
+              );
+              if (!cancelled) setAttendeeRatings(summaries);
+            } catch (ratingsErr) {
+              console.error("Couldn't load attendee ratings:", ratingsErr.message);
+            }
           }
         }
       } catch (err) {
@@ -196,9 +215,10 @@ export default function ActivityDetail() {
           <Avatar src={hostProfile?.avatar_url} name={hostProfile?.display_name} seed={activity.host_id} size={48} />
           <div style={{ minWidth: 0 }}>
             <div className="mono" style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Hosted by</div>
-            <div style={{ fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>
               {displayName(hostProfile)}
             </div>
+            <RatingSummary summary={hostRating} size={11} />
           </div>
         </div>
       )}
@@ -261,8 +281,11 @@ export default function ActivityDetail() {
                       onKeyDown={(e) => e.key === "Enter" && navigate(`/profile/${r.traveller_id}`)}
                     >
                       <Avatar src={profile.avatar_url} name={profile.display_name} seed={r.traveller_id} size={36} />
-                      <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {name}
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {name}
+                        </div>
+                        <RatingSummary summary={attendeeRatings[r.traveller_id]} size={10} />
                       </div>
                     </div>
                     <button

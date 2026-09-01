@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Mountain, UtensilsCrossed, Footprints, Clock, Users, MapPin, Navigation } from "lucide-react";
 import { formatDistance } from "../lib/geo";
 import Avatar from "./Avatar.jsx";
+import RatingSummary from "./RatingSummary.jsx";
 import { displayName } from "../lib/profileDisplay";
 
 const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
-export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, distanceKm }) {
+export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, distanceKm, hostRating }) {
   const navigate = useNavigate();
   const Icon = TYPE_ICON[activity.type] || Footprints;
   const host = activity.profiles;
@@ -36,6 +37,7 @@ export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, dista
               >
                 {displayName(host)}
               </span>
+              <RatingSummary summary={hostRating} size={10} />
             </>
           )}
         </div>
