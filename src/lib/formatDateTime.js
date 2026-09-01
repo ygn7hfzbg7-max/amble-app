@@ -5,6 +5,9 @@
 // date parts instead, so it looks the same everywhere.
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAYS_LONG = [
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTHS_LONG = [
   "January", "February", "March", "April", "May", "June",
@@ -51,6 +54,28 @@ export function formatMonthYear(input) {
   const d = toDate(input);
   if (!d) return null;
   return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// 24-hour "13:00" — used on cards grouped under a day heading, where the
+// date itself is already shown once, above the list.
+export function formatTimeOnly(input) {
+  const d = toDate(input);
+  if (!d) return "";
+  return formatTime(d);
+}
+
+// The heading a day's activities are grouped under: "Today", "Tomorrow",
+// "Yesterday", or "Saturday, 5 September" (with the year appended when it
+// isn't the current one).
+export function formatDayHeading(input, now = new Date()) {
+  const d = toDate(input);
+  if (!d) return "";
+  const dayDiff = Math.round((startOfDay(d) - startOfDay(now)) / 86400000);
+  if (dayDiff === 0) return "Today";
+  if (dayDiff === 1) return "Tomorrow";
+  if (dayDiff === -1) return "Yesterday";
+  const yearPart = d.getFullYear() !== now.getFullYear() ? ` ${d.getFullYear()}` : "";
+  return `${WEEKDAYS_LONG[d.getDay()]}, ${d.getDate()} ${MONTHS_LONG[d.getMonth()]}${yearPart}`;
 }
 
 // Chat-timestamp shorthand: "14:32" for today, "Yesterday 14:32" for

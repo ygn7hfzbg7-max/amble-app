@@ -201,8 +201,18 @@ export default function ActivityDetail() {
           </div>
         }
       >
-      <h1 style={{ fontSize: 22, marginBottom: 8 }}>{activity.title}</h1>
-      <p style={{ color: "var(--muted)", marginBottom: 16 }}>{activity.description}</p>
+      <h1 style={{ fontSize: 22, marginBottom: 6 }}>{activity.title}</h1>
+      <div
+        style={{
+          fontFamily: '"Space Grotesk", sans-serif',
+          fontWeight: 700,
+          fontSize: 20,
+          color: "var(--ink)",
+          marginBottom: 16,
+        }}
+      >
+        {activity.starts_at ? formatDateTime(activity.starts_at) : "Time TBD"}
+      </div>
 
       {activity.host_id && (
         <div
@@ -224,6 +234,8 @@ export default function ActivityDetail() {
         </div>
       )}
 
+      <p style={{ color: "var(--muted)", fontSize: 14, marginBottom: 16 }}>{activity.description}</p>
+
       <ErrorBanner message={warning} />
 
       {hasLocation && (
@@ -237,43 +249,43 @@ export default function ActivityDetail() {
         </ErrorBoundary>
       )}
 
-      <div className="card">
-        <p><strong>When:</strong> {activity.starts_at ? formatDateTime(activity.starts_at) : "TBD"}</p>
-        <p><strong>Meet at:</strong> {meetPointLabel}</p>
-        <p><strong>Fee:</strong> {activity.fee ? `£${activity.fee}` : "Free"}</p>
-        <p>
-          <strong>Spots:</strong>{" "}
-          {isFull ? (
-            <span style={{ color: "var(--brick)", fontWeight: 600 }}>Full</span>
-          ) : spotsTotal != null ? (
-            `${Math.max(spotsTotal - acceptedCount, 0)} of ${spotsTotal} left`
-          ) : (
-            "TBD"
-          )}
-        </p>
+      <div className="card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div>
+          <div className="mono" style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Meet at</div>
+          <div style={{ fontSize: 14 }}>{meetPointLabel}</div>
+        </div>
+        <div>
+          <div className="mono" style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Fee</div>
+          <div style={{ fontSize: 14 }}>{activity.fee ? `£${activity.fee}` : "Free"}</div>
+        </div>
+        <div>
+          <div className="mono" style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Spots</div>
+          <div style={{ fontSize: 14 }}>
+            {isFull ? (
+              <span style={{ color: "var(--brick)", fontWeight: 600 }}>Full</span>
+            ) : spotsTotal != null ? (
+              `${Math.max(spotsTotal - acceptedCount, 0)} of ${spotsTotal} left`
+            ) : (
+              "TBD"
+            )}
+          </div>
+        </div>
       </div>
 
       {isHost && (
         <>
-          <h2
-            className="mono"
-            style={{ fontSize: 14, textTransform: "uppercase", letterSpacing: 1, color: "var(--muted)", marginTop: 8, marginBottom: 10 }}
-          >
+          <h2 className="day-heading" style={{ fontSize: 14, marginTop: 8 }}>
             Confirmed attendees
           </h2>
           {confirmedAttendees.length === 0 ? (
             <p style={{ color: "var(--muted)", marginBottom: 16 }}>No one confirmed yet.</p>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+            <div className="card" style={{ padding: "0 14px", marginBottom: 16 }}>
               {confirmedAttendees.map((r) => {
                 const profile = r.profiles || {};
                 const name = displayName(profile);
                 return (
-                  <div
-                    key={r.id}
-                    className="card"
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}
-                  >
+                  <div key={r.id} className="person-row">
                     <div
                       role="button"
                       tabIndex={0}
@@ -281,9 +293,9 @@ export default function ActivityDetail() {
                       onClick={() => navigate(`/profile/${r.traveller_id}`)}
                       onKeyDown={(e) => e.key === "Enter" && navigate(`/profile/${r.traveller_id}`)}
                     >
-                      <Avatar src={profile.avatar_url} name={profile.display_name} seed={r.traveller_id} size={36} />
+                      <Avatar src={profile.avatar_url} name={profile.display_name} seed={r.traveller_id} size={32} />
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {name}
                         </div>
                         <RatingSummary summary={attendeeRatings[r.traveller_id]} size={10} />
@@ -291,7 +303,7 @@ export default function ActivityDetail() {
                     </div>
                     <button
                       className="btn-secondary"
-                      style={{ width: "auto", padding: "10px 18px", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}
+                      style={{ width: "auto", padding: "8px 14px", fontSize: 13, display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}
                       onClick={() => navigate(`/chat/${id}/${r.traveller_id}`)}
                     >
                       <MessageCircle size={16} /> Message

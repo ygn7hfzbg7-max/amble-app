@@ -25,9 +25,8 @@ const STATUS_COLOR = {
 
 const SECTION_HEADING_STYLE = {
   fontSize: 14,
-  textTransform: "uppercase",
-  letterSpacing: 1,
-  color: "var(--muted)",
+  fontWeight: 700,
+  color: "var(--ink)",
   marginBottom: 10,
   marginTop: 8,
 };
@@ -125,8 +124,8 @@ export default function ActivityRequests() {
     const profile = r.profiles || {};
     const name = displayName(profile);
     return (
-      <div key={r.id} className="card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+      <div key={r.id} className="listing-card" style={{ cursor: "default", marginBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
           <div
             role="button"
             tabIndex={0}
@@ -136,45 +135,51 @@ export default function ActivityRequests() {
           >
             <Avatar src={profile.avatar_url} name={profile.display_name} seed={r.traveller_id} size={36} />
             <div style={{ minWidth: 0 }}>
-              <h3 style={{ fontSize: 16, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 2 }}>{name}</h3>
-              <RatingSummary summary={ratings[r.traveller_id]} size={10} />
+              <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {name}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+                <RatingSummary summary={ratings[r.traveller_id]} size={10} />
+                {profile.city && (
+                  <span className="mono" style={{ fontSize: 11, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {profile.city}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-          <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: STATUS_COLOR[r.status] || "var(--muted)", flexShrink: 0 }}>
+          <span className="mono" style={{ fontSize: 11, fontWeight: 600, color: STATUS_COLOR[r.status] || "var(--muted)", flexShrink: 0 }}>
             {STATUS_LABEL[r.status] || r.status}
           </span>
         </div>
-        {profile.city && (
-          <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 4 }}>{profile.city}</p>
-        )}
         {profile.bio && (
-          <p style={{ fontSize: 14, marginBottom: 12 }}>{profile.bio}</p>
+          <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 8, marginBottom: 0 }}>{profile.bio}</p>
         )}
         {r.status === "accepted" && (
-          <p style={{ color: "var(--moss)", fontSize: 13, marginBottom: 12 }}>
+          <p style={{ color: "var(--moss)", fontSize: 13, marginTop: 8, marginBottom: 0 }}>
             Confirmed for {formatDateTime(activity.starts_at)} at {activity.meet_point}.
           </p>
         )}
         {r.status === "waitlisted" && spotsFree > 0 && (
-          <p className="mono" style={{ color: "var(--gold)", fontSize: 12, marginBottom: 12 }}>
+          <p className="mono" style={{ color: "var(--gold)", fontSize: 12, marginTop: 8, marginBottom: 0 }}>
             A spot is open — you can accept them now.
           </p>
         )}
         {(showAccept || showDecline || showRemove || showMessage) && (
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
             {showMessage && (
               <button
                 className="btn-secondary"
-                style={{ width: "auto", padding: "10px 18px", display: "flex", alignItems: "center", gap: 6 }}
+                style={{ width: "auto", padding: "8px 14px", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}
                 onClick={() => navigate(`/chat/${activity.id}/${r.traveller_id}`)}
               >
-                <MessageCircle size={16} /> Message
+                <MessageCircle size={14} /> Message
               </button>
             )}
             {showAccept && (
               <button
                 className="btn-primary"
-                style={{ width: "auto", padding: "10px 18px" }}
+                style={{ width: "auto", padding: "8px 14px", fontSize: 13 }}
                 disabled={actioningId === r.id || spotsFree <= 0}
                 title={spotsFree <= 0 ? "No spots open right now" : undefined}
                 onClick={() => respond(r.id, "accepted")}
@@ -185,7 +190,7 @@ export default function ActivityRequests() {
             {showDecline && (
               <button
                 className="btn-secondary"
-                style={{ width: "auto", padding: "10px 18px" }}
+                style={{ width: "auto", padding: "8px 14px", fontSize: 13 }}
                 disabled={actioningId === r.id}
                 onClick={() => respond(r.id, "declined")}
               >
@@ -195,7 +200,7 @@ export default function ActivityRequests() {
             {showRemove && (
               <button
                 className="btn-secondary"
-                style={{ width: "auto", padding: "10px 18px", borderColor: "var(--brick)", color: "var(--brick)" }}
+                style={{ width: "auto", padding: "8px 14px", fontSize: 13, borderColor: "var(--brick)", color: "var(--brick)" }}
                 disabled={actioningId === r.id}
                 onClick={() => respond(r.id, "declined")}
               >
@@ -218,11 +223,27 @@ export default function ActivityRequests() {
         <ChevronLeft size={16} /> back
       </button>
 
-      <h1 style={{ fontSize: 22, marginBottom: 8 }}>{activity.title}</h1>
-      <div className="card" style={{ marginBottom: 20 }}>
-        <p><strong>When:</strong> {formatDateTime(activity.starts_at)}</p>
-        <p><strong>Meet at:</strong> {activity.meet_point}</p>
-        <p><strong>Spots:</strong> {acceptedCount}/{activity.spots_total} confirmed</p>
+      <h1 style={{ fontSize: 22, marginBottom: 4 }}>{activity.title}</h1>
+      <div
+        style={{
+          fontFamily: '"Space Grotesk", sans-serif',
+          fontWeight: 700,
+          fontSize: 18,
+          color: "var(--ink)",
+          marginBottom: 12,
+        }}
+      >
+        {formatDateTime(activity.starts_at)}
+      </div>
+      <div className="card" style={{ marginBottom: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div>
+          <div className="mono" style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Meet at</div>
+          <div style={{ fontSize: 14 }}>{activity.meet_point}</div>
+        </div>
+        <div>
+          <div className="mono" style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Spots</div>
+          <div style={{ fontSize: 14 }}>{acceptedCount}/{activity.spots_total} confirmed</div>
+        </div>
       </div>
 
       <ErrorBanner message={error} />
