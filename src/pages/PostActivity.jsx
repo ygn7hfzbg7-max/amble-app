@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import LocationPicker from "../components/LocationPicker.jsx";
+import CategoryPicker from "../components/CategoryPicker.jsx";
 
 export default function PostActivity() {
   const navigate = useNavigate();
@@ -72,11 +73,8 @@ export default function PostActivity() {
       <form onSubmit={handleSubmit}>
         <input placeholder="Title" value={form.title} onChange={update("title")} required />
 
-        <select value={form.type} onChange={update("type")}>
-          <option>Walk</option>
-          <option>Hike</option>
-          <option>Food</option>
-        </select>
+        <label className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>Category</label>
+        <CategoryPicker value={form.type} onChange={(type) => setForm((f) => ({ ...f, type }))} />
 
         <textarea placeholder="Description" value={form.description} onChange={update("description")} rows={3} />
 

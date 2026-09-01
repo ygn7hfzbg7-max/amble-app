@@ -1,17 +1,17 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Mountain, UtensilsCrossed, Footprints, MapPin, Navigation } from "lucide-react";
+import { MapPin, Navigation } from "lucide-react";
 import { formatDistance } from "../lib/geo";
+import { getCategory } from "../lib/categories";
 import Avatar from "./Avatar.jsx";
 import RatingSummary from "./RatingSummary.jsx";
 import { displayName } from "../lib/profileDisplay";
 import { formatTimeOnly } from "../lib/formatDateTime";
 
-const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
-
 export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, distanceKm, hostRating }) {
   const navigate = useNavigate();
-  const Icon = TYPE_ICON[activity.type] || Footprints;
+  const category = getCategory(activity.type);
+  const Icon = category.icon;
   const host = activity.profiles;
 
   return (
@@ -71,9 +71,9 @@ export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, dista
       </div>
 
       <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, marginTop: 6, color: "var(--muted)", fontSize: 12 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, color: category.color }}>
           <Icon size={12} />
-          {activity.type}
+          {category.value}
         </span>
         {activity.city && (
           <span style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

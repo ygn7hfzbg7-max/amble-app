@@ -11,6 +11,7 @@ import RatingSummary from "../components/RatingSummary.jsx";
 import { displayName } from "../lib/profileDisplay";
 import { fetchRatingSummary, fetchRatingSummaries } from "../lib/reviews";
 import { formatDateTime } from "../lib/formatDateTime";
+import { getCategory } from "../lib/categories";
 
 export default function ActivityDetail() {
   const { id } = useParams();
@@ -166,6 +167,8 @@ export default function ActivityDetail() {
 
   const isHost = Boolean(userId) && activity.host_id === userId;
   const canSeeExact = isHost || myRequestStatus === "accepted";
+  const category = getCategory(activity.type);
+  const CategoryIcon = category.icon;
   const latitude = Number(activity.latitude);
   const longitude = Number(activity.longitude);
   const hasLocation = activity.latitude != null && activity.longitude != null;
@@ -202,6 +205,13 @@ export default function ActivityDetail() {
         }
       >
       <h1 style={{ fontSize: 22, marginBottom: 6 }}>{activity.title}</h1>
+      <div
+        className="mono"
+        style={{ display: "flex", alignItems: "center", gap: 6, color: category.color, fontSize: 12, fontWeight: 600, marginBottom: 6 }}
+      >
+        <CategoryIcon size={13} />
+        {category.value}
+      </div>
       <div
         style={{
           fontFamily: '"Space Grotesk", sans-serif',

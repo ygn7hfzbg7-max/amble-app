@@ -1,12 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Mountain, UtensilsCrossed, Footprints, MapPin, MessageCircle } from "lucide-react";
+import { MapPin, MessageCircle } from "lucide-react";
 import ShareButton from "./ShareButton.jsx";
 import Avatar from "./Avatar.jsx";
 import RatingSummary from "./RatingSummary.jsx";
+import { getCategory } from "../lib/categories";
 import { formatTimeOnly } from "../lib/formatDateTime";
-
-const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
 const STATUS_LABEL = {
   pending: "Pending",
@@ -56,7 +55,8 @@ function UnreadDot({ size = 8 }) {
 export default function PlanCard({ plan, unreadThreads, hostRating }) {
   const navigate = useNavigate();
   const { activity, role } = plan;
-  const Icon = TYPE_ICON[activity.type] || Footprints;
+  const category = getCategory(activity.type);
+  const Icon = category.icon;
   const unread = unreadThreads || new Set();
 
   const isConfirmed =
@@ -140,9 +140,9 @@ export default function PlanCard({ plan, unreadThreads, hostRating }) {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, marginTop: 6, color: "var(--muted)", fontSize: 12 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0, color: category.color }}>
           <Icon size={12} />
-          {activity.type}
+          {category.value}
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           <MapPin size={12} />
