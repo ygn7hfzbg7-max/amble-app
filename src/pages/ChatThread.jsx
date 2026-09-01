@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import Avatar from "../components/Avatar.jsx";
 import { displayName } from "../lib/profileDisplay";
+import { formatChatTimestamp } from "../lib/formatDateTime";
 
 export default function ChatThread() {
   const { activityId, otherId } = useParams();
@@ -195,7 +196,7 @@ export default function ChatThread() {
           return (
             <div
               key={m.id}
-              style={{ display: "flex", justifyContent: isMine ? "flex-end" : "flex-start", marginBottom: 10 }}
+              style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start", marginBottom: 10 }}
             >
               <div
                 style={{
@@ -212,6 +213,9 @@ export default function ChatThread() {
               >
                 {m.body}
               </div>
+              <span className="mono" style={{ fontSize: 10, color: "var(--muted)", marginTop: 3, padding: "0 2px" }}>
+                {formatChatTimestamp(m.created_at)}
+              </span>
             </div>
           );
         })}

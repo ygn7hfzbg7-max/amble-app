@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Mountain, UtensilsCrossed, Footprints, Clock, MapPin, MessageCircle } from "lucide-react";
 import ShareButton from "./ShareButton.jsx";
 import Avatar from "./Avatar.jsx";
+import { formatDateTime } from "../lib/formatDateTime";
 
 const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
@@ -138,7 +139,7 @@ export default function PlanCard({ plan, unreadThreads }) {
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12, marginBottom: 4 }}>
         <Clock size={12} />
-        {new Date(activity.starts_at).toLocaleString()}
+        {formatDateTime(activity.starts_at)}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12, marginBottom: canSeeExact ? 4 : 10 }}>
         <MapPin size={12} />

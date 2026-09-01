@@ -7,6 +7,7 @@ import ErrorBanner from "../components/ErrorBanner.jsx";
 import LocationFilter from "../components/LocationFilter.jsx";
 import { distanceKm } from "../lib/geo";
 import { fetchPendingReviews, fetchRatingSummaries } from "../lib/reviews";
+import { formatDateOnly } from "../lib/formatDateTime";
 
 const DATE_CHIPS = [
   { key: "all", label: "All upcoming" },
@@ -36,10 +37,7 @@ function toDateInputValue(date) {
 }
 
 function formatPillDate(dateStr) {
-  const d = startOfDay(dateStr);
-  const weekday = d.toLocaleDateString(undefined, { weekday: "short" });
-  const month = d.toLocaleDateString(undefined, { month: "short" });
-  return `${weekday} ${d.getDate()} ${month}`;
+  return formatDateOnly(startOfDay(dateStr));
 }
 
 function dateRangeFor(filter, customDate) {

@@ -7,6 +7,7 @@ import Avatar from "../components/Avatar.jsx";
 import RatingSummary from "../components/RatingSummary.jsx";
 import { displayName } from "../lib/profileDisplay";
 import { fetchRatingSummaries } from "../lib/reviews";
+import { formatDateTime } from "../lib/formatDateTime";
 
 const STATUS_LABEL = {
   pending: "Pending",
@@ -151,7 +152,7 @@ export default function ActivityRequests() {
         )}
         {r.status === "accepted" && (
           <p style={{ color: "var(--moss)", fontSize: 13, marginBottom: 12 }}>
-            Confirmed for {new Date(activity.starts_at).toLocaleString()} at {activity.meet_point}.
+            Confirmed for {formatDateTime(activity.starts_at)} at {activity.meet_point}.
           </p>
         )}
         {r.status === "waitlisted" && spotsFree > 0 && (
@@ -219,7 +220,7 @@ export default function ActivityRequests() {
 
       <h1 style={{ fontSize: 22, marginBottom: 8 }}>{activity.title}</h1>
       <div className="card" style={{ marginBottom: 20 }}>
-        <p><strong>When:</strong> {new Date(activity.starts_at).toLocaleString()}</p>
+        <p><strong>When:</strong> {formatDateTime(activity.starts_at)}</p>
         <p><strong>Meet at:</strong> {activity.meet_point}</p>
         <p><strong>Spots:</strong> {acceptedCount}/{activity.spots_total} confirmed</p>
       </div>

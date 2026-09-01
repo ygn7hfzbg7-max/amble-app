@@ -5,6 +5,7 @@ import { formatDistance } from "../lib/geo";
 import Avatar from "./Avatar.jsx";
 import RatingSummary from "./RatingSummary.jsx";
 import { displayName } from "../lib/profileDisplay";
+import { formatDateTime } from "../lib/formatDateTime";
 
 const TYPE_ICON = { Hike: Mountain, Food: UtensilsCrossed, Walk: Footprints };
 
@@ -79,7 +80,7 @@ export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, dista
       </h3>
       <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12, marginBottom: 4 }}>
         <Clock size={12} />
-        {new Date(activity.starts_at).toLocaleString()}
+        {formatDateTime(activity.starts_at)}
       </div>
       {activity.city && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 12, marginBottom: 4 }}>
