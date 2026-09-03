@@ -2,7 +2,7 @@ import React from "react";
 
 // Same accent colors used elsewhere in the app (moss/brick/gold/muted), so a
 // fallback avatar always fits the palette.
-const PALETTE = ["#3c6e58", "#a8431f", "#b4903a", "#948c7e"];
+const PALETTE = ["#3c6e58", "#a8431f", "#b4903a", "#7c7364"];
 
 function hashString(str) {
   let hash = 0;
