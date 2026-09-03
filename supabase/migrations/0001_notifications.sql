@@ -33,6 +33,22 @@ alter table message_notification_state enable row level security;
 -- "leave a review" email has gone out, so the cron sweep in
 -- /api/review-reminders.js never sends the same person a second reminder
 -- for the same activity.
+--
+-- GOTCHA: this table has exactly two foreign keys — one to activities, one
+-- to profiles — which is the exact shape PostgREST auto-detects as an
+-- implicit many-to-many junction between those two tables. Combined with
+-- the existing direct activities.host_id -> profiles.id foreign key, that
+-- gives PostgREST two paths between activities and profiles, so any
+-- *implicit* embed (`.select("*, profiles(...)")` on activities, or
+-- `profiles(...)` nested under a `.select("*, activities(...))` embed)
+-- fails with "Could not embed because more than one relationship was
+-- found for 'activities' and 'profiles'". Every query in this codebase
+-- that embeds profiles under activities specifies the relationship
+-- explicitly (`profiles!activities_host_id_fkey(...)`) to sidestep this —
+-- keep doing that for any new one, rather than adding a third foreign key
+-- here (or elsewhere) to "fix" it, since Supabase Database Webhooks and
+-- RLS don't care about this table's shape, only PostgREST's embedding
+-- resolver does.
 create table if not exists review_reminder_state (
   activity_id uuid not null references activities(id) on delete cascade,
   recipient_id uuid not null references profiles(id) on delete cascade,
