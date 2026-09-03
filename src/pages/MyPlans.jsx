@@ -105,7 +105,7 @@ export default function MyPlans() {
 
         const { data: myRequests, error: myRequestsError } = await supabase
           .from("requests")
-          .select("*, activities(*, profiles(display_name, avatar_url))")
+          .select("*, activities(*, profiles!activities_host_id_fkey(display_name, avatar_url))")
           .eq("traveller_id", userId);
         if (myRequestsError) {
           setError(myRequestsError.message);

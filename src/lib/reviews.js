@@ -65,7 +65,7 @@ export async function fetchPendingReviews(supabase, userId) {
 
   const { data: myRequests, error: myRequestsError } = await supabase
     .from("requests")
-    .select("activity_id, activities(id, title, starts_at, host_id, profiles(display_name, avatar_url))")
+    .select("activity_id, activities(id, title, starts_at, host_id, profiles!activities_host_id_fkey(display_name, avatar_url))")
     .eq("traveller_id", userId)
     .eq("status", "accepted");
   if (myRequestsError) throw myRequestsError;
