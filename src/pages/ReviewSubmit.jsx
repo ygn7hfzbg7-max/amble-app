@@ -13,8 +13,8 @@ function tagPillStyle(active) {
   return {
     padding: "8px 14px",
     borderRadius: 999,
-    border: `1px solid ${active ? "var(--moss)" : "var(--paper-deep)"}`,
-    background: active ? "var(--moss)" : "var(--white)",
+    border: `1px solid ${active ? "var(--moss)" : "var(--border)"}`,
+    background: active ? "var(--moss)" : "var(--paper-deep)",
     color: active ? "var(--white)" : "var(--ink)",
     fontSize: 12,
     fontWeight: 600,

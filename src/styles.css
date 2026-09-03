@@ -1,14 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Karla:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
 :root {
-  --ink: #20241c;
-  --paper: #efe7d8;
-  --paper-deep: #e1d6be;
+  --ink: #14150f;
+  --paper: #ffffff;
+  --paper-deep: #f5f1ec;
+  --border: #ece6db;
+  --rule: #f1ece3;
   --moss: #3c6e58;
-  --brick: #b84b2c;
+  --accent: #a8431f;
+  --brick: var(--accent);
   --gold: #b4903a;
-  --muted: #756b58;
-  --white: #fbf8f1;
+  --muted: #948c7e;
+  --white: #ffffff;
 }
 
 * { box-sizing: border-box; }
@@ -62,7 +65,7 @@ h1, h2, h3, button {
 
 .card {
   background: var(--white);
-  border: 1px solid var(--paper-deep);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px;
   margin-bottom: 16px;
@@ -72,7 +75,7 @@ h1, h2, h3, button {
    from the flex gap around them rather than a fixed margin-bottom. */
 .listing-card {
   background: var(--white);
-  border: 1px solid var(--paper-deep);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px 14px;
   cursor: pointer;
@@ -87,7 +90,7 @@ h1, h2, h3, button {
 }
 
 .listing-hairline {
-  border-top: 1px solid var(--paper-deep);
+  border-top: 1px solid var(--rule);
   margin-top: 10px;
   padding-top: 10px;
 }
@@ -102,14 +105,14 @@ h1, h2, h3, button {
 }
 
 .person-row + .person-row {
-  border-top: 1px solid var(--paper-deep);
+  border-top: 1px solid var(--rule);
 }
 
 input, textarea, select {
   width: 100%;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid var(--paper-deep);
+  border: 1px solid var(--border);
   font-size: 14px;
   font-family: "Karla", sans-serif;
   margin-bottom: 14px;
@@ -118,7 +121,7 @@ input, textarea, select {
 .activity-map {
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid var(--paper-deep);
+  border: 1px solid var(--border);
 }
 
 .activity-map .leaflet-tile-pane {
@@ -140,7 +143,7 @@ input, textarea, select {
   background: var(--white) !important;
   color: var(--moss) !important;
   border: none !important;
-  border-bottom: 1px solid var(--paper-deep) !important;
+  border-bottom: 1px solid var(--rule) !important;
   font-family: "Space Grotesk", sans-serif;
   font-weight: 700;
 }
@@ -150,12 +153,12 @@ input, textarea, select {
 }
 
 .activity-map .leaflet-control-zoom a:hover {
-  background: var(--paper) !important;
+  background: var(--paper-deep) !important;
   color: var(--brick) !important;
 }
 
 .activity-map .leaflet-control-attribution {
-  background: rgba(251, 248, 241, 0.82) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
   color: var(--muted);
   font-family: "IBM Plex Mono", monospace;
   font-size: 10px;
@@ -176,7 +179,7 @@ input, textarea, select {
 
 .error-banner {
   color: var(--brick);
-  background: rgba(184, 75, 44, 0.08);
+  background: rgba(168, 67, 31, 0.08);
   border: 1px solid var(--brick);
   border-radius: 10px;
   padding: 10px 14px;

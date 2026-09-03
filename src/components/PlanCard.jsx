@@ -28,7 +28,7 @@ function messageButtonStyle() {
     alignItems: "center",
     gap: 4,
     background: "none",
-    border: "1px solid var(--paper-deep)",
+    border: "1px solid var(--border)",
     borderRadius: 999,
     padding: "4px 10px",
     fontSize: 11,
@@ -85,7 +85,7 @@ export default function PlanCard({ plan, unreadThreads, hostRating }) {
     <div
       className="listing-card"
       style={{
-        borderLeft: isConfirmed ? "4px solid var(--moss)" : "1px solid var(--paper-deep)",
+        borderLeft: isConfirmed ? "4px solid var(--moss)" : "1px solid var(--border)",
         background: isConfirmed ? "rgba(60, 110, 88, 0.06)" : "var(--white)",
       }}
       onClick={() => navigate(`/activity/${activity.id}`)}
@@ -126,8 +126,8 @@ export default function PlanCard({ plan, unreadThreads, hostRating }) {
                 width: 24,
                 height: 24,
                 borderRadius: "50%",
-                border: "1px solid var(--paper-deep)",
-                background: "var(--white)",
+                border: "1px solid var(--border)",
+                background: "var(--paper-deep)",
                 color: "var(--ink)",
                 cursor: "pointer",
                 padding: 0,
