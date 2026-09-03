@@ -33,7 +33,7 @@ export default function Login() {
 
   return (
     <div style={{ padding: "60px 24px" }}>
-      <h1 style={{ fontSize: 28, marginBottom: 8 }}>amble</h1>
+      <h1 style={{ fontSize: 28, marginBottom: 8, color: "var(--brick)" }}>amble</h1>
       <p style={{ color: "var(--muted)", marginBottom: 32 }}>
         Join someone's Saturday.
       </p>

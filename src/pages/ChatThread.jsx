@@ -162,7 +162,7 @@ export default function ChatThread() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <div style={{ padding: "20px 20px 14px", borderBottom: "1px solid var(--paper-deep)", flexShrink: 0 }}>
+      <div style={{ padding: "20px 20px 14px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
         <button
           onClick={() => navigate(-1)}
           className="mono"
@@ -205,7 +205,7 @@ export default function ChatThread() {
                   borderRadius: 14,
                   background: isMine ? "var(--brick)" : "var(--white)",
                   color: isMine ? "var(--white)" : "var(--ink)",
-                  border: isMine ? "none" : "1px solid var(--paper-deep)",
+                  border: isMine ? "none" : "1px solid var(--border)",
                   fontSize: 14,
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
@@ -222,7 +222,7 @@ export default function ChatThread() {
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ padding: "12px 20px", borderTop: "1px solid var(--paper-deep)", flexShrink: 0 }}>
+      <div style={{ padding: "12px 20px", borderTop: "1px solid var(--border)", flexShrink: 0 }}>
         <ErrorBanner message={sendError} />
         <form onSubmit={handleSend} style={{ display: "flex", gap: 8 }}>
           <input

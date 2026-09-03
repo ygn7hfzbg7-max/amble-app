@@ -55,7 +55,7 @@ export default function LocationFilter({
               }}
               onFocus={() => setOpen(true)}
               onBlur={() => setTimeout(() => setOpen(false), 150)}
-              style={{ marginBottom: 0, paddingLeft: 36, paddingRight: value ? 36 : 14 }}
+              style={{ marginBottom: 0, paddingLeft: 36, paddingRight: value ? 36 : 14, background: "var(--paper-deep)" }}
             />
             {value && (
               <button
@@ -88,7 +88,7 @@ export default function LocationFilter({
                 position: "absolute",
                 zIndex: 20,
                 background: "var(--white)",
-                border: "1px solid var(--paper-deep)",
+                border: "1px solid var(--border)",
                 borderRadius: 10,
                 width: "100%",
                 maxHeight: 220,
@@ -112,7 +112,7 @@ export default function LocationFilter({
                       cursor: "pointer",
                       padding: "10px 12px",
                       fontSize: 13,
-                      borderBottom: "1px solid var(--paper-deep)",
+                      borderBottom: "1px solid var(--rule)",
                     }}
                   >
                     <MapPin size={14} style={{ flexShrink: 0, color: "var(--moss)" }} />
@@ -137,8 +137,8 @@ export default function LocationFilter({
             padding: "0 14px",
             height: 44,
             borderRadius: 10,
-            border: `1px solid ${nearMe ? "var(--brick)" : "var(--paper-deep)"}`,
-            background: nearMe ? "var(--brick)" : "var(--white)",
+            border: `1px solid ${nearMe ? "var(--brick)" : "var(--border)"}`,
+            background: nearMe ? "var(--brick)" : "var(--paper-deep)",
             color: nearMe ? "var(--white)" : "var(--ink)",
             fontSize: 12,
             fontWeight: 600,

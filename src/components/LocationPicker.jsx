@@ -117,7 +117,7 @@ export default function LocationPicker({ selected, onSelect }) {
           }}
           onFocus={() => suggestions.length > 0 && setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
-          style={{ marginBottom: 0, paddingRight: selected ? 36 : 14 }}
+          style={{ marginBottom: 0, paddingRight: selected ? 36 : 14, background: "var(--paper-deep)" }}
         />
         {selected && (
           <button
@@ -150,7 +150,7 @@ export default function LocationPicker({ selected, onSelect }) {
             position: "absolute",
             zIndex: 20,
             background: "var(--white)",
-            border: "1px solid var(--paper-deep)",
+            border: "1px solid var(--border)",
             borderRadius: 10,
             width: "100%",
             maxHeight: 220,
@@ -174,7 +174,7 @@ export default function LocationPicker({ selected, onSelect }) {
                   cursor: "pointer",
                   padding: "10px 12px",
                   fontSize: 13,
-                  borderBottom: "1px solid var(--paper-deep)",
+                  borderBottom: "1px solid var(--rule)",
                 }}
               >
                 <MapPin size={14} style={{ marginTop: 2, flexShrink: 0, color: "var(--moss)" }} />

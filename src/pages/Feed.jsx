@@ -297,8 +297,8 @@ export default function Feed() {
   const chipStyle = (active) => ({
     padding: "8px 14px",
     borderRadius: 999,
-    border: `1px solid ${active ? "var(--brick)" : "var(--paper-deep)"}`,
-    background: active ? "var(--brick)" : "var(--white)",
+    border: `1px solid ${active ? "var(--brick)" : "var(--border)"}`,
+    background: active ? "var(--brick)" : "var(--paper-deep)",
     color: active ? "var(--white)" : "var(--ink)",
     fontSize: 12,
     fontWeight: 600,
@@ -309,11 +309,11 @@ export default function Feed() {
   return (
     <div style={{ padding: "24px 20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22 }}>amble</h1>
+        <h1 style={{ fontSize: 22, color: "var(--brick)" }}>amble</h1>
         <div style={{ display: "flex", gap: 8 }}>
           <button
             className="btn-secondary"
-            style={{ width: "auto", padding: 10 }}
+            style={{ width: "auto", padding: 10, background: "var(--paper-deep)" }}
             onClick={() => navigate("/post")}
           >
             <Plus size={16} />
@@ -321,7 +321,7 @@ export default function Feed() {
           <div style={{ position: "relative" }}>
             <button
               className="btn-secondary"
-              style={{ width: "auto", padding: 10 }}
+              style={{ width: "auto", padding: 10, background: "var(--paper-deep)" }}
               onClick={() => navigate("/my-plans")}
             >
               <ClipboardList size={16} />
@@ -352,7 +352,7 @@ export default function Feed() {
           </div>
           <button
             className="btn-secondary"
-            style={{ width: "auto", padding: 10 }}
+            style={{ width: "auto", padding: 10, background: "var(--paper-deep)" }}
             onClick={() => navigate("/profile")}
           >
             <User size={16} />
@@ -495,8 +495,8 @@ export default function Feed() {
                 width: 26,
                 height: 26,
                 borderRadius: "50%",
-                border: "1px solid var(--paper-deep)",
-                background: "var(--white)",
+                border: "1px solid var(--border)",
+                background: "var(--paper-deep)",
                 color: "var(--muted)",
                 cursor: "pointer",
                 padding: 0,
