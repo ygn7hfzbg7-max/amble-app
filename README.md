@@ -20,6 +20,11 @@ and the review flow from the design prototype still need to be wired in.
 - `src/pages/Profile.jsx` — profile + sign out
 - `src/pages/EditProfile.jsx` — set display name, city, and bio
 - `src/lib/supabaseClient.js` — Supabase setup + suggested table schema (as SQL comments)
+- `api/send-notification.js` — Vercel serverless function; Supabase Database Webhooks
+  on `requests`/`messages` POST here to trigger Resend emails (new join request,
+  accepted/declined, new chat message)
+- `api/review-reminders.js` — Vercel Cron target that emails hosts/travellers to
+  review each other once an activity's start time has passed
 
 ## Setup
 
@@ -46,6 +51,21 @@ and the review flow from the design prototype still need to be wired in.
    ```
 
 5. Open the local URL it prints (usually http://localhost:5173).
+
+## Email notifications
+
+Transactional emails (new join request, accepted/declined, new chat
+message, review reminders) go through Resend, sent from Vercel serverless
+functions under `/api`. Setup is split across three places:
+
+1. **Vercel env vars** — `RESEND_API_KEY` (already set in Production),
+   plus `SUPABASE_SERVICE_ROLE_KEY`, `PUBLIC_APP_URL`, and optionally
+   `RESEND_FROM_EMAIL`, `SUPABASE_WEBHOOK_SECRET`, `CRON_SECRET` — see
+   `.env.example` for what each does.
+2. **Supabase SQL editor** — run `supabase/migrations/0001_notifications.sql`
+   (adds `profiles.notifications_enabled` and two small dedup tables).
+3. **Supabase Database Webhooks** — configured by hand in the dashboard;
+   see the full step-by-step in the PR description for this feature.
 
 ## Suggested next steps (best done in Claude Code)
 - Add the two-sided review screen after an activity

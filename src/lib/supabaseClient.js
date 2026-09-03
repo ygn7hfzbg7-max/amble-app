@@ -29,6 +29,9 @@ export async function ensureProfile(user) {
     languages     text          -- free text, e.g. "English, Spanish"
     avatar_url    text          -- public URL of the file in the "avatars" Storage bucket
     tier          text   default 'Basic'   -- Basic | Verified | Trusted
+    notifications_enabled boolean default true  -- checked before any notification
+                                                    -- email is sent; see api/_lib and
+                                                    -- supabase/migrations/0001_notifications.sql
     created_at    timestamptz default now()
 
     "email" is stored for account/auth purposes only — never render it as a
@@ -124,4 +127,12 @@ export async function ensureProfile(user) {
     (host <-> that confirmed traveller — nobody else)
   - a user can update only the read_at column, and only on messages sent
     to them (marking a thread as read)
+
+  Email notifications (new join request, request accepted/declined, new
+  chat message, review reminder) are sent by serverless functions under
+  /api, triggered by Supabase Database Webhooks on requests/messages and a
+  Vercel Cron sweep for review reminders — see
+  supabase/migrations/0001_notifications.sql for the two extra tables that
+  back debouncing/dedup, and the PR description for the exact webhook
+  setup steps.
 */
