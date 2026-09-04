@@ -13,6 +13,7 @@ const STATUS_LABEL = {
   accepted: "Confirmed",
   declined: "Declined",
   waitlisted: "Waitlisted",
+  cancelled: "Cancelled",
 };
 
 const STATUS_COLOR = {
@@ -20,6 +21,7 @@ const STATUS_COLOR = {
   accepted: "var(--moss)",
   declined: "var(--brick)",
   waitlisted: "var(--gold)",
+  cancelled: "var(--brick)",
 };
 
 function messageButtonStyle() {
@@ -133,6 +135,11 @@ export default function PlanCard({ plan, unreadThreads, hostRating }) {
                 padding: 0,
               }}
             />
+          )}
+          {role === "hosting" && activity.status === "cancelled" && (
+            <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: "var(--brick)" }}>
+              Cancelled
+            </span>
           )}
           <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: role === "hosting" ? "var(--gold)" : "var(--muted)" }}>
             {role === "hosting" ? "Hosting" : "Joining"}

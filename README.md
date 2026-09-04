@@ -9,8 +9,12 @@ and the review flow from the design prototype still need to be wired in.
 - `src/pages/Login.jsx` — magic-link email login
 - `src/pages/Feed.jsx` — browse activities
 - `src/pages/PostActivity.jsx` — locals post an activity
-- `src/pages/ActivityDetail.jsx` — view an activity, request to join (travellers),
-  or jump to the requests list (hosts); shows the confirmed match once accepted
+- `src/pages/EditActivity.jsx` — host edits or cancels an activity; date/time,
+  location, category, and spots lock once someone has accepted (title and
+  description stay editable) — see `supabase/migrations/0002_edit_cancel_waitlist.sql`
+- `src/pages/ActivityDetail.jsx` — view an activity, request to join or withdraw
+  (travellers), or jump to the requests list / edit (hosts); shows the confirmed
+  match once accepted
 - `src/pages/MyPlans.jsx` — unified chronological view of everything you're
   hosting or have requested to join, with a banner for pending join requests
 - `src/pages/PendingRequests.jsx` — accept/decline every pending join
@@ -63,9 +67,15 @@ functions under `/api`. Setup is split across three places:
    `RESEND_FROM_EMAIL`, `SUPABASE_WEBHOOK_SECRET`, `CRON_SECRET` — see
    `.env.example` for what each does.
 2. **Supabase SQL editor** — run `supabase/migrations/0001_notifications.sql`
-   (adds `profiles.notifications_enabled` and two small dedup tables).
+   (adds `profiles.notifications_enabled` and two small dedup tables) and
+   `supabase/migrations/0002_edit_cancel_waitlist.sql` (activity
+   cancellation, the edit lock on core commitment fields, and automatic
+   waitlist promotion on withdrawal).
 3. **Supabase Database Webhooks** — configured by hand in the dashboard;
-   see the full step-by-step in the PR description for this feature.
+   see the full step-by-step in the PR description for this feature. The
+   webhook posting to `/api/send-notification.js` needs to cover UPDATE
+   events on `activities` too (not just `requests`/`messages`) so hosts'
+   title/description edits notify already-accepted participants.
 
 ## Suggested next steps (best done in Claude Code)
 - Add the two-sided review screen after an activity

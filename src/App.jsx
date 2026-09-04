@@ -6,6 +6,7 @@ import Feed from "./pages/Feed.jsx";
 import ActivityDetail from "./pages/ActivityDetail.jsx";
 import ActivityRequests from "./pages/ActivityRequests.jsx";
 import PostActivity from "./pages/PostActivity.jsx";
+import EditActivity from "./pages/EditActivity.jsx";
 import Profile from "./pages/Profile.jsx";
 import EditProfile from "./pages/EditProfile.jsx";
 import PublicProfile from "./pages/PublicProfile.jsx";
@@ -62,6 +63,10 @@ export default function App() {
           <Route
             path="/post"
             element={session ? <PostActivity /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/activity/:id/edit"
+            element={session ? <EditActivity /> : <Navigate to="/login" />}
           />
           <Route
             path="/my-plans"

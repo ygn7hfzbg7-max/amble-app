@@ -56,14 +56,38 @@ export async function ensureProfile(user) {
     currency      text default 'GBP'   -- ISO 4217 code, e.g. 'GBP' | 'EUR' | 'USD' — set
                                           -- by the host when posting; never converted, since
                                           -- the fee is paid in person in this currency
+    status        text not null default 'active'   -- active | cancelled — see
+                                          -- supabase/migrations/0002_edit_cancel_waitlist.sql
     created_at    timestamptz default now()
+
+    spots_total already doubles as the activity's capacity/waitlist threshold —
+    once accepted-request-count >= spots_total, new requests land as
+    'waitlisted' instead of 'pending' (see requests.status below).
+
+    Once any request on an activity is 'accepted', a database trigger
+    (enforce_activity_edit_lock, in the migration above) blocks changes to
+    starts_at / meet_point / city / country / latitude / longitude / type /
+    spots_total — the fields that define what someone actually signed up
+    for. title and description stay editable regardless. The only way to
+    change a locked field once someone's committed is to cancel (status ->
+    'cancelled') and, if it's still worth doing, post it again.
 
   requests
     id            uuid primary key default gen_random_uuid()
     activity_id   uuid references activities.id
     traveller_id  uuid references profiles.id
-    status        text default 'pending'   -- pending | accepted | declined | waitlisted
+    status        text default 'pending'   -- pending | accepted | declined | waitlisted | cancelled
     created_at    timestamptz default now()
+
+    'cancelled' covers two distinct flows, both landing on the same
+    status: a host cancelling the whole activity (bulk-updates every
+    pending/accepted/waitlisted request) and a traveller withdrawing their
+    own accepted request individually. A database trigger
+    (promote_next_waitlisted) reacts to an accepted -> cancelled
+    transition by auto-promoting the oldest 'waitlisted' request on that
+    same activity to 'accepted' — but only when the activity is still
+    'active', so a host's bulk cancel doesn't "promote" someone into a
+    request that's about to be cancelled itself a moment later.
 
   reviews
     id            uuid primary key default gen_random_uuid()
@@ -105,10 +129,19 @@ export async function ensureProfile(user) {
 
   Enable Row Level Security on all tables and add policies so:
   - anyone can read activities
-  - only the host can insert/update their own activities
-  - only the traveller can insert their own requests
+  - only the host can insert/update their own activities (the
+    enforce_activity_edit_lock trigger further restricts which columns
+    that update policy can actually change once someone's accepted — see
+    supabase/migrations/0002_edit_cancel_waitlist.sql)
+  - only the traveller can insert their own requests, and a trigger blocks
+    that insert outright if the activity has already been cancelled
   - the host of the activity a request belongs to can update that
-    request's status (needed for the accept/decline screen)
+    request's status (needed for the accept/decline screen, and for the
+    bulk pending/accepted/waitlisted -> cancelled update when the host
+    cancels the whole activity)
+  - a traveller can update their own request from 'accepted' to
+    'cancelled' (withdrawing) — nothing else; a trigger reacts to that by
+    auto-promoting the oldest waitlisted request on the same activity
   - any authenticated user can read profiles (needed so a host can see who
     requested to join, and a traveller can see their own confirmed match)
   - a user can insert/update only their own profiles row (id = auth.uid()),

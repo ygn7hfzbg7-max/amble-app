@@ -38,7 +38,8 @@ export default function PendingRequests() {
         const { data: hostedActivities, error: hostedError } = await supabase
           .from("activities")
           .select("id")
-          .eq("host_id", userData.user.id);
+          .eq("host_id", userData.user.id)
+          .eq("status", "active");
         if (hostedError) {
           setError(hostedError.message);
           return;
