@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Eye } from "lucide-react";
+import { ChevronLeft, Eye, ShieldCheck } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import Avatar from "../components/Avatar.jsx";
+import TierBadge from "../components/TierBadge.jsx";
 import { displayName } from "../lib/profileDisplay";
+import { TIER_LABELS } from "../lib/verification";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -25,7 +27,7 @@ export default function Profile() {
       if (data.user?.id) {
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url")
+          .select("display_name, avatar_url, verification_tier")
           .eq("id", data.user.id)
           .single();
         if (profileError) setError(profileError.message);
@@ -57,16 +59,24 @@ export default function Profile() {
           <h1 style={{ fontSize: 20, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {displayName(profile)}
           </h1>
-          <p className="mono" style={{ color: "var(--muted)", fontSize: 12 }}>{email}</p>
+          <p className="mono" style={{ color: "var(--muted)", fontSize: 12, marginBottom: 4 }}>{email}</p>
+          <TierBadge tier={profile?.verification_tier} />
         </div>
       </div>
 
       <ErrorBanner message={error} />
 
+      <button
+        className="btn-secondary"
+        style={{ marginTop: 16, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        onClick={() => navigate("/verification")}
+      >
+        <ShieldCheck size={16} /> Verification — {TIER_LABELS[profile?.verification_tier] || "Unverified"}
+      </button>
       {userId && (
         <button
           className="btn-secondary"
-          style={{ marginTop: 16, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          style={{ marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
           onClick={() => navigate(`/profile/${userId}`)}
         >
           <Eye size={16} /> View your public profile

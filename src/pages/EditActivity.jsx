@@ -6,7 +6,9 @@ import ErrorBanner from "../components/ErrorBanner.jsx";
 import LocationPicker from "../components/LocationPicker.jsx";
 import CategoryPicker from "../components/CategoryPicker.jsx";
 import CurrencySelector from "../components/CurrencySelector.jsx";
+import VerificationNotice from "../components/VerificationNotice.jsx";
 import { getCategory } from "../lib/categories";
+import { requiredTierFor, meetsTier, friendlyVerificationError } from "../lib/verification";
 
 function toDatetimeLocalValue(iso) {
   const d = iso ? new Date(iso) : null;
@@ -29,6 +31,7 @@ export default function EditActivity() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [myTier, setMyTier] = useState("unverified");
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +42,13 @@ export default function EditActivity() {
           if (!cancelled) setLoadError(userError.message);
           return;
         }
+
+        const { data: myProfile, error: myProfileError } = await supabase
+          .from("profiles")
+          .select("verification_tier")
+          .eq("id", userData.user.id)
+          .single();
+        if (!cancelled && !myProfileError) setMyTier(myProfile?.verification_tier || "unverified");
 
         const { data, error } = await supabase.from("activities").select("*").eq("id", id).single();
         if (error) {
@@ -83,6 +93,8 @@ export default function EditActivity() {
   }, [id, navigate]);
 
   const locked = acceptedCount > 0;
+  const requiredTier = !locked ? requiredTierFor(form?.type) : null;
+  const blockedByTier = Boolean(requiredTier) && !meetsTier(myTier, requiredTier);
 
   const update = (key) => (e) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -96,6 +108,7 @@ export default function EditActivity() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (blockedByTier) return;
     setError("");
     setSaving(true);
     try {
@@ -118,7 +131,7 @@ export default function EditActivity() {
         }
       }
       const { error } = await supabase.from("activities").update(payload).eq("id", id);
-      if (error) setError(error.message);
+      if (error) setError(friendlyVerificationError(error.message));
       else navigate(`/activity/${id}`);
     } catch (err) {
       setError(err.message || "Couldn't save these changes. Please try again.");
@@ -211,7 +224,13 @@ export default function EditActivity() {
             <Lock size={12} /> {category.value}
           </div>
         ) : (
-          <CategoryPicker value={form.type} onChange={(type) => setForm((f) => ({ ...f, type }))} />
+          <CategoryPicker value={form.type} onChange={(type) => setForm((f) => ({ ...f, type }))} userTier={myTier} />
+        )}
+
+        {blockedByTier && (
+          <div style={{ marginBottom: 14 }}>
+            <VerificationNotice category={form.type} requiredTier={requiredTier} action="Hosting" />
+          </div>
         )}
 
         <textarea placeholder="Description" value={form.description} onChange={update("description")} rows={3} />
@@ -272,7 +291,7 @@ export default function EditActivity() {
         </div>
 
         <ErrorBanner message={error} />
-        <button className="btn-primary" type="submit" disabled={saving || cancelling}>
+        <button className="btn-primary" type="submit" disabled={saving || cancelling || blockedByTier}>
           {saving ? "Saving…" : "Save changes"}
         </button>
       </form>

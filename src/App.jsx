@@ -9,6 +9,7 @@ import PostActivity from "./pages/PostActivity.jsx";
 import EditActivity from "./pages/EditActivity.jsx";
 import Profile from "./pages/Profile.jsx";
 import EditProfile from "./pages/EditProfile.jsx";
+import Verification from "./pages/Verification.jsx";
 import PublicProfile from "./pages/PublicProfile.jsx";
 import MyPlans from "./pages/MyPlans.jsx";
 import PendingRequests from "./pages/PendingRequests.jsx";
@@ -91,6 +92,10 @@ export default function App() {
           <Route
             path="/profile/edit"
             element={session ? <EditProfile /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/verification"
+            element={session ? <Verification /> : <Navigate to="/login" />}
           />
           {/* Public so a profile link works for someone who isn't logged in,
               same as the activity detail page above. */}

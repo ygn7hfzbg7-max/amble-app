@@ -1,7 +1,13 @@
 import React from "react";
+import { Lock } from "lucide-react";
 import { CATEGORIES } from "../lib/categories";
+import { requiredTierFor, meetsTier } from "../lib/verification";
 
-export default function CategoryPicker({ value, onChange }) {
+// `userTier` is optional — when passed, categories the current user doesn't
+// yet qualify for (e.g. Sport/Outdoors before phone verification) get a
+// small lock hint. Selecting one is still allowed here; the actual block
+// happens on submit, with a link to the verification screen.
+export default function CategoryPicker({ value, onChange, userTier }) {
   return (
     <div
       role="radiogroup"
@@ -15,14 +21,18 @@ export default function CategoryPicker({ value, onChange }) {
     >
       {CATEGORIES.map(({ value: catValue, icon: Icon, color }) => {
         const selected = value === catValue;
+        const required = requiredTierFor(catValue);
+        const gated = required && userTier != null && !meetsTier(userTier, required);
         return (
           <button
             key={catValue}
             type="button"
             role="radio"
             aria-checked={selected}
+            title={gated ? `Requires ${required} verification` : undefined}
             onClick={() => onChange(catValue)}
             style={{
+              position: "relative",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -37,6 +47,12 @@ export default function CategoryPicker({ value, onChange }) {
               textAlign: "center",
             }}
           >
+            {gated && (
+              <Lock
+                size={11}
+                style={{ position: "absolute", top: 6, right: 6, color: selected ? "var(--white)" : "var(--muted)" }}
+              />
+            )}
             <Icon size={18} />
             <span className="mono" style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.2 }}>
               {catValue}

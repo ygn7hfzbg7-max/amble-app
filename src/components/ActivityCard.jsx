@@ -6,6 +6,7 @@ import { getCategory } from "../lib/categories";
 import { formatFee } from "../lib/currency";
 import Avatar from "./Avatar.jsx";
 import RatingSummary from "./RatingSummary.jsx";
+import TierBadge from "./TierBadge.jsx";
 import { displayName } from "../lib/profileDisplay";
 import { formatTimeOnly } from "../lib/formatDateTime";
 
@@ -98,6 +99,7 @@ export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, dista
               {displayName(host)}
             </span>
             <RatingSummary summary={hostRating} size={10} />
+            <TierBadge tier={host.verification_tier} size={10} />
           </div>
           <span
             className="mono"
