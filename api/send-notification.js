@@ -37,6 +37,8 @@ export default async function handler(req, res) {
       await handleRequestEvent({ type, record, old_record });
     } else if (table === "messages") {
       await handleMessageEvent({ type, record });
+    } else if (table === "activities") {
+      await handleActivityEvent({ type, record, old_record });
     }
   } catch (err) {
     console.error("send-notification handler failed:", err);
@@ -74,6 +76,16 @@ async function handleRequestEvent({ type, record, old_record }) {
       await notifyRequestAccepted(db, record);
     } else if (record.status === "declined" && prevStatus !== "declined") {
       await notifyRequestDeclined(db, record);
+    } else if (
+      record.status === "cancelled" &&
+      prevStatus !== "cancelled" &&
+      (prevStatus === "pending" || prevStatus === "accepted")
+    ) {
+      // Fires for both a host's bulk cancel of the whole activity and a
+      // traveller withdrawing their own accepted request — only the
+      // former should notify anyone, so notifyActivityCancellation checks
+      // whether the activity itself is actually cancelled before sending.
+      await notifyActivityCancellation(db, record);
     }
   }
 }
@@ -166,6 +178,73 @@ async function notifyRequestDeclined(db, record) {
       ctaUrl: url,
     }),
   });
+}
+
+async function notifyActivityCancellation(db, record) {
+  const { data: activity, error: activityError } = await db
+    .from("activities")
+    .select("id, title, status")
+    .eq("id", record.activity_id)
+    .single();
+  if (activityError || !activity) {
+    console.error("notifyActivityCancellation: couldn't load activity", activityError?.message);
+    return;
+  }
+  // A traveller withdrawing their own accepted request also flips status
+  // to 'cancelled' but leaves the activity itself 'active' — nothing to
+  // notify them about there, they just did it themselves.
+  if (activity.status !== "cancelled") return;
+
+  const traveller = await getNotifiableProfile(db, record.traveller_id);
+  if (!traveller) return;
+
+  await sendEmail({
+    to: traveller.email,
+    subject: `${activity.title} was cancelled`,
+    html: emailShell({
+      heading: `${activity.title} was cancelled`,
+      body: "The host cancelled this one. Sorry about that — take a look at what else is happening.",
+      ctaLabel: "Browse activities",
+      ctaUrl: `${siteUrl()}/`,
+    }),
+  });
+}
+
+async function handleActivityEvent({ type, record, old_record }) {
+  if (type !== "UPDATE" || !record || !old_record) return;
+  const db = getAdminClient();
+
+  const detailsChanged = record.title !== old_record.title || record.description !== old_record.description;
+  if (!detailsChanged) return;
+
+  const { data: accepted, error } = await db
+    .from("requests")
+    .select("traveller_id")
+    .eq("activity_id", record.id)
+    .eq("status", "accepted");
+  if (error) {
+    console.error("handleActivityEvent: couldn't load accepted requests", error.message);
+    return;
+  }
+  if (!accepted || accepted.length === 0) return;
+
+  const url = `${siteUrl()}/activity/${record.id}`;
+  await Promise.all(
+    accepted.map(async ({ traveller_id }) => {
+      const traveller = await getNotifiableProfile(db, traveller_id);
+      if (!traveller) return;
+      await sendEmail({
+        to: traveller.email,
+        subject: `Details updated for ${record.title}`,
+        html: emailShell({
+          heading: `Host updated the details for ${record.title}`,
+          body: "Take a look at what changed.",
+          ctaLabel: "View activity",
+          ctaUrl: url,
+        }),
+      });
+    })
+  );
 }
 
 async function handleMessageEvent({ type, record }) {

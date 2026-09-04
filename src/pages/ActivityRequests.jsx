@@ -119,6 +119,7 @@ export default function ActivityRequests() {
 
   const acceptedCount = requests.filter((r) => r.status === "accepted").length;
   const spotsFree = activity.spots_total - acceptedCount;
+  const isCancelled = activity.status === "cancelled";
 
   const renderRequest = (r, { showAccept, showDecline, showRemove, showMessage } = {}) => {
     const profile = r.profiles || {};
@@ -248,16 +249,22 @@ export default function ActivityRequests() {
 
       <ErrorBanner message={error} />
 
+      {isCancelled && (
+        <p className="mono" style={{ color: "var(--brick)", fontWeight: 600, fontSize: 13, marginBottom: 16 }}>
+          This activity was cancelled — requests can no longer be accepted or declined.
+        </p>
+      )}
+
       {requests.length === 0 && (
         <p style={{ color: "var(--muted)" }}>No one has requested to join yet.</p>
       )}
 
-      {pendingRequests.map((r) => renderRequest(r, { showAccept: true, showDecline: true }))}
+      {pendingRequests.map((r) => renderRequest(r, { showAccept: !isCancelled, showDecline: !isCancelled }))}
 
       {waitlistedRequests.length > 0 && (
         <>
           <h2 className="mono" style={SECTION_HEADING_STYLE}>Waitlist</h2>
-          {waitlistedRequests.map((r) => renderRequest(r, { showAccept: true, showDecline: true }))}
+          {waitlistedRequests.map((r) => renderRequest(r, { showAccept: !isCancelled, showDecline: !isCancelled }))}
         </>
       )}
 

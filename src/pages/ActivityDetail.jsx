@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, MessageCircle } from "lucide-react";
+import { ChevronLeft, MessageCircle, Pencil } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
@@ -24,9 +24,11 @@ export default function ActivityDetail() {
   const [loadError, setLoadError] = useState("");
   const [warning, setWarning] = useState("");
   const [userId, setUserId] = useState(null);
+  const [myRequestId, setMyRequestId] = useState(null);
   const [myRequestStatus, setMyRequestStatus] = useState(null);
   const [requestError, setRequestError] = useState("");
   const [requesting, setRequesting] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
   const [confirmedAttendees, setConfirmedAttendees] = useState([]);
   const [hostRating, setHostRating] = useState(null);
   const [attendeeRatings, setAttendeeRatings] = useState({});
@@ -93,7 +95,7 @@ export default function ActivityDetail() {
         if (me && data?.host_id !== me) {
           const { data: myRequest, error: myRequestError } = await supabase
             .from("requests")
-            .select("status")
+            .select("id, status")
             .eq("activity_id", id)
             .eq("traveller_id", me)
             .maybeSingle();
@@ -101,6 +103,7 @@ export default function ActivityDetail() {
           if (myRequestError) {
             setWarning((w) => w || "Couldn't load your request status. Please refresh.");
           } else {
+            setMyRequestId(myRequest?.id || null);
             setMyRequestStatus(myRequest?.status || null);
           }
         }
@@ -149,13 +152,16 @@ export default function ActivityDetail() {
     setRequesting(true);
     try {
       const status = isFull ? "waitlisted" : "pending";
-      const { error } = await supabase.from("requests").insert({
-        activity_id: id,
-        traveller_id: userId,
-        status,
-      });
+      const { data: inserted, error } = await supabase
+        .from("requests")
+        .insert({ activity_id: id, traveller_id: userId, status })
+        .select("id")
+        .single();
       if (error) setRequestError(error.message);
-      else setMyRequestStatus(status);
+      else {
+        setMyRequestId(inserted?.id || null);
+        setMyRequestStatus(status);
+      }
     } catch (err) {
       setRequestError(err.message || "Couldn't send your request. Please try again.");
     } finally {
@@ -163,10 +169,27 @@ export default function ActivityDetail() {
     }
   };
 
+  const handleWithdraw = async () => {
+    if (!myRequestId) return;
+    if (!window.confirm("Withdraw from this activity? Your spot may be given to someone on the waitlist.")) return;
+    setRequestError("");
+    setWithdrawing(true);
+    try {
+      const { error } = await supabase.from("requests").update({ status: "cancelled" }).eq("id", myRequestId);
+      if (error) setRequestError(error.message);
+      else setMyRequestStatus("cancelled");
+    } catch (err) {
+      setRequestError(err.message || "Couldn't withdraw. Please try again.");
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
   if (loadError) return <div style={{ padding: 24 }}><ErrorBanner message={loadError} /></div>;
   if (!activity) return <div style={{ padding: 24 }}>Loading…</div>;
 
   const isHost = Boolean(userId) && activity.host_id === userId;
+  const isCancelled = activity.status === "cancelled";
   const canSeeExact = isHost || myRequestStatus === "accepted";
   const category = getCategory(activity.type);
   const CategoryIcon = category.icon;
@@ -224,6 +247,14 @@ export default function ActivityDetail() {
       >
         {activity.starts_at ? formatDateTime(activity.starts_at) : "Time TBD"}
       </div>
+
+      {isCancelled && (
+        <div className="card" style={{ background: "var(--paper-deep)", borderColor: "var(--brick)", marginBottom: 16 }}>
+          <p className="mono" style={{ color: "var(--brick)", fontWeight: 600, fontSize: 13, margin: 0 }}>
+            This activity was cancelled by the host.
+          </p>
+        </div>
+      )}
 
       {activity.host_id && (
         <div
@@ -324,9 +355,20 @@ export default function ActivityDetail() {
               })}
             </div>
           )}
-          <button className="btn-primary" onClick={() => navigate(`/activity/${id}/requests`)}>
-            View requests
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="btn-primary" style={{ flex: 1 }} onClick={() => navigate(`/activity/${id}/requests`)}>
+              View requests
+            </button>
+            {!isCancelled && (
+              <button
+                className="btn-secondary"
+                style={{ width: "auto", padding: "8px 14px", display: "flex", alignItems: "center", gap: 6 }}
+                onClick={() => navigate(`/activity/${id}/edit`)}
+              >
+                <Pencil size={14} /> Edit
+              </button>
+            )}
+          </div>
         </>
       )}
 
@@ -339,15 +381,25 @@ export default function ActivityDetail() {
                 You're confirmed! Meet at {activity.meet_point || "the spot shared by the host"} on{" "}
                 {activity.starts_at ? formatDateTime(activity.starts_at) : "the scheduled time"}.
               </p>
-              {activity.host_id && (
+              <div style={{ display: "flex", gap: 8 }}>
+                {activity.host_id && (
+                  <button
+                    className="btn-secondary"
+                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+                    onClick={() => navigate(`/chat/${id}/${activity.host_id}`)}
+                  >
+                    <MessageCircle size={16} /> Message host
+                  </button>
+                )}
                 <button
                   className="btn-secondary"
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-                  onClick={() => navigate(`/chat/${id}/${activity.host_id}`)}
+                  style={{ width: "auto", padding: "8px 14px", borderColor: "var(--brick)", color: "var(--brick)" }}
+                  onClick={handleWithdraw}
+                  disabled={withdrawing}
                 >
-                  <MessageCircle size={16} /> Message host
+                  {withdrawing ? "Withdrawing…" : "Withdraw"}
                 </button>
-              )}
+              </div>
             </>
           )}
           {myRequestStatus === "pending" && (
@@ -365,7 +417,12 @@ export default function ActivityDetail() {
               The host declined your request to join this one.
             </p>
           )}
-          {myRequestStatus == null && (
+          {myRequestStatus === "cancelled" && (
+            <p style={{ color: "var(--muted)" }}>
+              {isCancelled ? "This activity was cancelled." : "You withdrew from this activity."}
+            </p>
+          )}
+          {myRequestStatus == null && !isCancelled && (
             userId ? (
               <button className="btn-primary" onClick={handleRequest} disabled={requesting}>
                 {requesting ? "Sending…" : isFull ? "Join waitlist" : "Request to join"}
