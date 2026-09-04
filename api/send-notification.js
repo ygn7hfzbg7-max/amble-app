@@ -79,9 +79,10 @@ async function handleRequestEvent({ type, record, old_record }) {
     } else if (
       record.status === "cancelled" &&
       prevStatus !== "cancelled" &&
-      (prevStatus === "pending" || prevStatus === "accepted")
+      (prevStatus === "pending" || prevStatus === "accepted" || prevStatus === "waitlisted")
     ) {
-      // Fires for both a host's bulk cancel of the whole activity and a
+      // Fires for both a host's bulk cancel of the whole activity (which
+      // now sweeps up pending/accepted/waitlisted requests alike) and a
       // traveller withdrawing their own accepted request — only the
       // former should notify anyone, so notifyActivityCancellation checks
       // whether the activity itself is actually cancelled before sending.

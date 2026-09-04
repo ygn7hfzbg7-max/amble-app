@@ -105,6 +105,17 @@ create policy "Travellers can withdraw their own accepted request"
 -- because the traveller doing the withdrawing has no RLS permission to
 -- update someone else's request row directly; this is the one place that
 -- cross-row update is allowed to happen.
+--
+-- Guarded on the activity still being 'active': this trigger also fires
+-- when a host's bulk cancel flips a batch of accepted requests to
+-- cancelled in one statement, and without this check it would "promote"
+-- a waitlisted request on an activity that's being cancelled out from
+-- under it — into a request that's about to get cancelled itself a
+-- moment later, but not before an "accepted" notification email has
+-- already gone out to that person. The client sets activities.status =
+-- 'cancelled' (committed) before it bulk-cancels requests, so by the
+-- time this trigger runs during that bulk update, the check below
+-- reliably sees 'cancelled' and skips promotion — not a race.
 create or replace function promote_next_waitlisted()
 returns trigger
 language plpgsql
@@ -113,7 +124,13 @@ set search_path = public, pg_temp
 as $$
 declare
   next_request_id uuid;
+  activity_status text;
 begin
+  select status into activity_status from activities where id = old.activity_id;
+  if activity_status is distinct from 'active' then
+    return new;
+  end if;
+
   select id into next_request_id
   from requests
   where activity_id = old.activity_id and status = 'waitlisted'

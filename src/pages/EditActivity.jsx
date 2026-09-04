@@ -144,7 +144,7 @@ export default function EditActivity() {
         .from("requests")
         .update({ status: "cancelled" })
         .eq("activity_id", id)
-        .in("status", ["pending", "accepted"]);
+        .in("status", ["pending", "accepted", "waitlisted"]);
       if (requestsError) {
         setError(requestsError.message);
         return;

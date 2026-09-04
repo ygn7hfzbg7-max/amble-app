@@ -81,11 +81,13 @@ export async function ensureProfile(user) {
 
     'cancelled' covers two distinct flows, both landing on the same
     status: a host cancelling the whole activity (bulk-updates every
-    pending/accepted request) and a traveller withdrawing their own
-    accepted request individually. A database trigger
-    (promote_next_waitlisted) reacts to the latter: whenever a request
-    flips accepted -> cancelled, the oldest 'waitlisted' request on that
-    same activity is automatically promoted to 'accepted'.
+    pending/accepted/waitlisted request) and a traveller withdrawing their
+    own accepted request individually. A database trigger
+    (promote_next_waitlisted) reacts to an accepted -> cancelled
+    transition by auto-promoting the oldest 'waitlisted' request on that
+    same activity to 'accepted' — but only when the activity is still
+    'active', so a host's bulk cancel doesn't "promote" someone into a
+    request that's about to be cancelled itself a moment later.
 
   reviews
     id            uuid primary key default gen_random_uuid()
@@ -135,8 +137,8 @@ export async function ensureProfile(user) {
     that insert outright if the activity has already been cancelled
   - the host of the activity a request belongs to can update that
     request's status (needed for the accept/decline screen, and for the
-    bulk pending/accepted -> cancelled update when the host cancels the
-    whole activity)
+    bulk pending/accepted/waitlisted -> cancelled update when the host
+    cancels the whole activity)
   - a traveller can update their own request from 'accepted' to
     'cancelled' (withdrawing) — nothing else; a trigger reacts to that by
     auto-promoting the oldest waitlisted request on the same activity
