@@ -8,11 +8,14 @@ import ActivityMap from "../components/ActivityMap.jsx";
 import ShareButton from "../components/ShareButton.jsx";
 import Avatar from "../components/Avatar.jsx";
 import RatingSummary from "../components/RatingSummary.jsx";
+import TierBadge from "../components/TierBadge.jsx";
+import VerificationNotice from "../components/VerificationNotice.jsx";
 import { displayName } from "../lib/profileDisplay";
 import { fetchRatingSummary, fetchRatingSummaries } from "../lib/reviews";
 import { formatDateTime } from "../lib/formatDateTime";
 import { getCategory } from "../lib/categories";
 import { formatFee } from "../lib/currency";
+import { requiredTierFor, meetsTier, friendlyVerificationError } from "../lib/verification";
 
 export default function ActivityDetail() {
   const { id } = useParams();
@@ -32,6 +35,7 @@ export default function ActivityDetail() {
   const [confirmedAttendees, setConfirmedAttendees] = useState([]);
   const [hostRating, setHostRating] = useState(null);
   const [attendeeRatings, setAttendeeRatings] = useState({});
+  const [myTier, setMyTier] = useState("basic");
 
   useEffect(() => {
     let cancelled = false;
@@ -63,7 +67,7 @@ export default function ActivityDetail() {
         if (data?.host_id) {
           const { data: host, error: hostError } = await supabase
             .from("profiles")
-            .select("id, display_name, avatar_url")
+            .select("id, display_name, avatar_url, verification_tier")
             .eq("id", data.host_id)
             .single();
           if (cancelled) return;
@@ -106,12 +110,20 @@ export default function ActivityDetail() {
             setMyRequestId(myRequest?.id || null);
             setMyRequestStatus(myRequest?.status || null);
           }
+
+          const { data: myProfile, error: myProfileError } = await supabase
+            .from("profiles")
+            .select("verification_tier")
+            .eq("id", me)
+            .single();
+          if (cancelled) return;
+          if (!myProfileError) setMyTier(myProfile?.verification_tier || "basic");
         }
 
         if (me && data?.host_id === me) {
           const { data: confirmedRequests, error: confirmedError } = await supabase
             .from("requests")
-            .select("id, traveller_id, profiles(display_name, avatar_url)")
+            .select("id, traveller_id, profiles(display_name, avatar_url, verification_tier)")
             .eq("activity_id", id)
             .eq("status", "accepted");
           if (cancelled) return;
@@ -143,11 +155,15 @@ export default function ActivityDetail() {
   const spotsTotal = Number.isFinite(activity?.spots_total) ? activity.spots_total : null;
   const isFull = spotsTotal != null ? acceptedCount >= spotsTotal : false;
 
+  const requiredTier = requiredTierFor(activity?.type);
+  const blockedByTier = Boolean(requiredTier) && !meetsTier(myTier, requiredTier);
+
   const handleRequest = async () => {
     if (!userId) {
       setRequestError("You need to be signed in to request to join.");
       return;
     }
+    if (blockedByTier) return;
     setRequestError("");
     setRequesting(true);
     try {
@@ -157,7 +173,7 @@ export default function ActivityDetail() {
         .insert({ activity_id: id, traveller_id: userId, status })
         .select("id")
         .single();
-      if (error) setRequestError(error.message);
+      if (error) setRequestError(friendlyVerificationError(error.message));
       else {
         setMyRequestId(inserted?.id || null);
         setMyRequestStatus(status);
@@ -271,7 +287,10 @@ export default function ActivityDetail() {
             <div style={{ fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>
               {displayName(hostProfile)}
             </div>
-            <RatingSummary summary={hostRating} size={11} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <RatingSummary summary={hostRating} size={11} />
+              <TierBadge tier={hostProfile?.verification_tier} size={10} />
+            </div>
           </div>
         </div>
       )}
@@ -340,7 +359,10 @@ export default function ActivityDetail() {
                         <div style={{ fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {name}
                         </div>
-                        <RatingSummary summary={attendeeRatings[r.traveller_id]} size={10} />
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <RatingSummary summary={attendeeRatings[r.traveller_id]} size={10} />
+                          <TierBadge tier={profile.verification_tier} size={10} />
+                        </div>
                       </div>
                     </div>
                     <button
@@ -424,9 +446,13 @@ export default function ActivityDetail() {
           )}
           {myRequestStatus == null && !isCancelled && (
             userId ? (
-              <button className="btn-primary" onClick={handleRequest} disabled={requesting}>
-                {requesting ? "Sending…" : isFull ? "Join waitlist" : "Request to join"}
-              </button>
+              blockedByTier ? (
+                <VerificationNotice category={activity.type} requiredTier={requiredTier} action="Joining" />
+              ) : (
+                <button className="btn-primary" onClick={handleRequest} disabled={requesting}>
+                  {requesting ? "Sending…" : isFull ? "Join waitlist" : "Request to join"}
+                </button>
+              )
             ) : (
               <button
                 className="btn-primary"

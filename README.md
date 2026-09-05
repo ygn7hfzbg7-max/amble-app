@@ -2,8 +2,9 @@
 
 A minimal working skeleton for the "join someone's Saturday" concept:
 auth, post an activity, browse/request to join. Built with React + Vite +
-Supabase. This is intentionally bare — chat, reviews, verification tiers,
-and the review flow from the design prototype still need to be wired in.
+Supabase. Chat, reviews, and layer 1 of verification (tiers + track-record
+gating) are wired in; later verification layers (ID checks, live location
+sharing) still need to be.
 
 ## What's here
 - `src/pages/Login.jsx` — magic-link email login
@@ -23,6 +24,10 @@ and the review flow from the design prototype still need to be wired in.
   a single activity, their profile info, and accept/decline
 - `src/pages/Profile.jsx` — profile + sign out
 - `src/pages/EditProfile.jsx` — set display name, city, and bio
+- `src/pages/Verification.jsx` — current verification tier and progress
+  toward the next one
+- `src/lib/verification.js` — tier constants and the category gating map
+  (which categories need `basic` to host/join)
 - `src/lib/supabaseClient.js` — Supabase setup + suggested table schema (as SQL comments)
 - `api/send-notification.js` — Vercel serverless function; Supabase Database Webhooks
   on `requests`/`messages` POST here to trigger Resend emails (new join request,
@@ -45,16 +50,39 @@ and the review flow from the design prototype still need to be wired in.
    - add a policy letting a user insert/update only their own `profiles`
      row (`id = auth.uid()`) — used by the profile edit screen and by the
      app's automatic profile-row creation on login
-3. Copy `.env.example` to `.env` and fill in your Supabase URL + anon key
+3. Also run `supabase/migrations/0003_verification_tier.sql` (adds
+   `profiles.verification_tier`, the automatic tier-upgrade functions, and
+   the category gating triggers) — see "Verification tiers" below. No
+   extra dashboard setup is needed for this one.
+4. Copy `.env.example` to `.env` and fill in your Supabase URL + anon key
    from Project Settings > API.
-4. Install dependencies and run:
+5. Install dependencies and run:
 
    ```
    npm install
    npm run dev
    ```
 
-5. Open the local URL it prints (usually http://localhost:5173).
+6. Open the local URL it prints (usually http://localhost:5173).
+
+## Verification tiers
+
+Layer 1 of the verification system: `profiles.verification_tier` starts
+everyone at `basic` (signing in at all already proves email ownership via
+the magic-link flow, so there's no separate "unverified" state) and
+upgrades to `verified` automatically once someone has 2 completed
+activities with visible, good reviews — no action needed, no manual flag.
+Sport and Outdoors activities are gated to require `basic` to host or join;
+since that's everyone today, it's currently a no-op kept in place as
+future-proofing (e.g. for a tier introduced below `basic` later, or a
+category that ends up needing `verified` specifically). See
+`src/lib/verification.js` for the category map and
+`supabase/migrations/0003_verification_tier.sql` for the full mechanics
+(tier transitions are locked to a handful of SECURITY DEFINER functions —
+a client can't just PATCH its own row to `verified`).
+
+There's no phone/SMS step in this layer and nothing to configure in the
+Supabase dashboard for it.
 
 ## Email notifications
 
@@ -79,7 +107,8 @@ functions under `/api`. Setup is split across three places:
 
 ## Suggested next steps (best done in Claude Code)
 - Add the two-sided review screen after an activity
-- Add the three-tier verification system from the design prototype
+- Layer 2+ of verification: government ID checks and live location sharing
+  on top of the basic/verified tiers already in place
 - Add basic chat once a request is accepted
 - Style pass to match the ticket-stub visual identity from the prototype
 - Eventually: wrap as a mobile app (Capacitor or React Native) before

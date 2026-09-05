@@ -7,6 +7,7 @@ import Avatar from "../components/Avatar.jsx";
 import ActivityCard from "../components/ActivityCard.jsx";
 import StarRating from "../components/StarRating.jsx";
 import RatingSummary from "../components/RatingSummary.jsx";
+import TierBadge from "../components/TierBadge.jsx";
 import { displayName, memberSince } from "../lib/profileDisplay";
 import { formatDateTime } from "../lib/formatDateTime";
 
@@ -38,7 +39,7 @@ export default function PublicProfile() {
       try {
         const { data, error } = await supabase
           .from("profiles")
-          .select("id, display_name, city, bio, languages, avatar_url, created_at")
+          .select("id, display_name, city, bio, languages, avatar_url, created_at, verification_tier")
           .eq("id", userId)
           .single();
         if (error) {
@@ -126,8 +127,9 @@ export default function PublicProfile() {
           <h1 style={{ fontSize: 22, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {name}
           </h1>
-          <div style={{ marginBottom: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
             <RatingSummary summary={ratingSummary} size={12} />
+            <TierBadge tier={profile.verification_tier} />
           </div>
           {profile.city && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 13, marginBottom: 2 }}>
