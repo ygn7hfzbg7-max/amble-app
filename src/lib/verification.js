@@ -3,11 +3,17 @@
 // supabase/migrations/0003_verification_tier.sql in sync with
 // CATEGORY_MIN_TIER / meetsTier here: the client checks below are what
 // actually stop someone in the UI, the SQL triggers are belt-and-braces.
+//
+// 'basic' is the starting tier for everyone — the existing magic-link
+// login already proves email ownership, so there's no separate
+// "unverified" state below it and no phone/SMS step in this layer.
+// 'verified' is basic + a track record, upgraded automatically. A tier
+// above 'verified' (e.g. ID verification) may show up later; TIER_RANK is
+// written so adding one is additive rather than a rework.
 
-export const TIER_RANK = { unverified: 0, basic: 1, verified: 2 };
+export const TIER_RANK = { basic: 0, verified: 1 };
 
 export const TIER_LABELS = {
-  unverified: "Unverified",
   basic: "Basic",
   verified: "Verified",
 };
@@ -18,9 +24,9 @@ export const TIER_LABELS = {
 export const VERIFIED_TRACK_RECORD_THRESHOLD = 2;
 export const VERIFIED_DECENT_RATING = 4;
 
-// Only categories where things get more physically remote or isolating
-// require anything beyond email — everything else stays open to a
-// brand-new, unverified sign-up.
+// A no-op today, since every sign-up already starts at 'basic' — kept as
+// future-proofing for a tier introduced below 'basic' later, or a category
+// that ends up needing 'verified' specifically.
 export const CATEGORY_MIN_TIER = {
   Sport: "basic",
   Outdoors: "basic",
@@ -33,19 +39,6 @@ export function requiredTierFor(category) {
 export function meetsTier(userTier, requiredTier) {
   if (!requiredTier) return true;
   return (TIER_RANK[userTier] ?? 0) >= (TIER_RANK[requiredTier] ?? 0);
-}
-
-// +<countrycode><number>, digits only after the leading +. Supabase phone
-// auth (and the SMS providers behind it) expects E.164.
-const E164 = /^\+[1-9]\d{7,14}$/;
-
-export function normalizePhone(input) {
-  const trimmed = (input || "").trim().replace(/[\s().-]/g, "");
-  return trimmed;
-}
-
-export function isValidPhone(input) {
-  return E164.test(normalizePhone(input));
 }
 
 // The gating triggers in supabase/migrations/0003_verification_tier.sql

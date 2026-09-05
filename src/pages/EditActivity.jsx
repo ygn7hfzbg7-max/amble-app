@@ -31,7 +31,7 @@ export default function EditActivity() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const [myTier, setMyTier] = useState("unverified");
+  const [myTier, setMyTier] = useState("basic");
 
   useEffect(() => {
     let cancelled = false;
@@ -48,7 +48,7 @@ export default function EditActivity() {
           .select("verification_tier")
           .eq("id", userData.user.id)
           .single();
-        if (!cancelled && !myProfileError) setMyTier(myProfile?.verification_tier || "unverified");
+        if (!cancelled && !myProfileError) setMyTier(myProfile?.verification_tier || "basic");
 
         const { data, error } = await supabase.from("activities").select("*").eq("id", id).single();
         if (error) {

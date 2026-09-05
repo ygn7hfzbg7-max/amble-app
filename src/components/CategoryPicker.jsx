@@ -4,9 +4,10 @@ import { CATEGORIES } from "../lib/categories";
 import { requiredTierFor, meetsTier } from "../lib/verification";
 
 // `userTier` is optional — when passed, categories the current user doesn't
-// yet qualify for (e.g. Sport/Outdoors before phone verification) get a
-// small lock hint. Selecting one is still allowed here; the actual block
-// happens on submit, with a link to the verification screen.
+// yet qualify for get a small lock hint (a no-op today, since everyone
+// starts at 'basic' already — see CATEGORY_MIN_TIER in lib/verification.js).
+// Selecting one is still allowed here; the actual block happens on submit,
+// with a link to the verification screen.
 export default function CategoryPicker({ value, onChange, userTier }) {
   return (
     <div

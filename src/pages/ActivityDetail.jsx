@@ -35,7 +35,7 @@ export default function ActivityDetail() {
   const [confirmedAttendees, setConfirmedAttendees] = useState([]);
   const [hostRating, setHostRating] = useState(null);
   const [attendeeRatings, setAttendeeRatings] = useState({});
-  const [myTier, setMyTier] = useState("unverified");
+  const [myTier, setMyTier] = useState("basic");
 
   useEffect(() => {
     let cancelled = false;
@@ -117,7 +117,7 @@ export default function ActivityDetail() {
             .eq("id", me)
             .single();
           if (cancelled) return;
-          if (!myProfileError) setMyTier(myProfile?.verification_tier || "unverified");
+          if (!myProfileError) setMyTier(myProfile?.verification_tier || "basic");
         }
 
         if (me && data?.host_id === me) {

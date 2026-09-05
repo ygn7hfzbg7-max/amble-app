@@ -26,7 +26,7 @@ export default function PostActivity() {
   const [currencyTouched, setCurrencyTouched] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [myTier, setMyTier] = useState("unverified");
+  const [myTier, setMyTier] = useState("basic");
 
   useEffect(() => {
     (async () => {
@@ -37,7 +37,7 @@ export default function PostActivity() {
         .select("verification_tier")
         .eq("id", userData.user.id)
         .single();
-      if (!tierError) setMyTier(data?.verification_tier || "unverified");
+      if (!tierError) setMyTier(data?.verification_tier || "basic");
     })();
   }, []);
 

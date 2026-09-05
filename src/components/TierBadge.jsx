@@ -1,13 +1,13 @@
 import React from "react";
-import { ShieldCheck, Phone } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
-// Small pill badge shown next to a person's name once they've verified
-// something — same tag-pill styling as the review tags on PublicProfile.
-// Deliberately renders nothing for 'unverified', which is the default for
-// almost everyone right now: a badge on every single name would just be
-// noise, so it only shows up once there's something to show.
+// Small pill badge shown next to a person's name once they've built a
+// track record — same tag-pill styling as the review tags on
+// PublicProfile. Deliberately renders nothing for 'basic', which is the
+// default for almost everyone right now (everyone starts there): a badge
+// on every single name would just be noise, so it only shows up once
+// there's something to show.
 const TIER_META = {
-  basic: { label: "Phone verified", icon: Phone, color: "var(--moss)" },
   verified: { label: "Verified", icon: ShieldCheck, color: "var(--moss)" },
 };
 

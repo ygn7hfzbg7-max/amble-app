@@ -31,14 +31,13 @@ export async function ensureProfile(user) {
     notifications_enabled boolean default true  -- checked before any notification
                                                     -- email is sent; see api/_lib and
                                                     -- supabase/migrations/0001_notifications.sql
-    verification_tier  text not null default 'unverified'  -- unverified | basic | verified —
-                                          -- email-only, +phone confirmed, +track record;
-                                          -- only changes via the SECURITY DEFINER functions
-                                          -- in supabase/migrations/0003_verification_tier.sql,
+    verification_tier  text not null default 'basic'  -- basic | verified — everyone starts
+                                          -- at 'basic' (magic-link login already proves
+                                          -- email ownership); 'verified' is basic + a
+                                          -- track record, upgraded automatically. Only
+                                          -- changes via the SECURITY DEFINER functions in
+                                          -- supabase/migrations/0003_verification_tier.sql,
                                           -- never a direct client update — see that file
-    phone               text          -- set only by confirm_phone_verification(), mirrored
-                                          -- from auth.users.phone once OTP-confirmed
-    phone_verified_at   timestamptz   -- set only by confirm_phone_verification()
     created_at    timestamptz default now()
 
     "email" is stored for account/auth purposes only — never render it as a
@@ -164,9 +163,9 @@ export async function ensureProfile(user) {
     requested to join, and a traveller can see their own confirmed match)
   - a user can insert/update only their own profiles row (id = auth.uid()),
     which is what the "ensureProfile" upsert above and the profile edit
-    screen rely on — verification_tier/phone/phone_verified_at are further
-    locked down on top of that by the profiles_verification_columns_locked
-    trigger, see supabase/migrations/0003_verification_tier.sql
+    screen rely on — verification_tier is further locked down on top of
+    that by the profiles_verification_tier_locked trigger, see
+    supabase/migrations/0003_verification_tier.sql
   - a review can only be inserted by its reviewer, about the activity's
     other confirmed party (host <-> that accepted traveller — nobody
     else), and only once the activity has started; editable by its

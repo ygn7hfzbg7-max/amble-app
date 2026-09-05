@@ -71,7 +71,7 @@ export default function Profile() {
         style={{ marginTop: 16, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
         onClick={() => navigate("/verification")}
       >
-        <ShieldCheck size={16} /> Verification — {TIER_LABELS[profile?.verification_tier] || "Unverified"}
+        <ShieldCheck size={16} /> Verification — {TIER_LABELS[profile?.verification_tier] || "Basic"}
       </button>
       {userId && (
         <button

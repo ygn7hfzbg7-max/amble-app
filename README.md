@@ -2,9 +2,9 @@
 
 A minimal working skeleton for the "join someone's Saturday" concept:
 auth, post an activity, browse/request to join. Built with React + Vite +
-Supabase. Chat, reviews, and layer 1 of verification (email + phone tiers)
-are wired in; later verification layers (ID checks, live location sharing)
-still need to be.
+Supabase. Chat, reviews, and layer 1 of verification (tiers + track-record
+gating) are wired in; later verification layers (ID checks, live location
+sharing) still need to be.
 
 ## What's here
 - `src/pages/Login.jsx` — magic-link email login
@@ -24,8 +24,8 @@ still need to be.
   a single activity, their profile info, and accept/decline
 - `src/pages/Profile.jsx` — profile + sign out
 - `src/pages/EditProfile.jsx` — set display name, city, and bio
-- `src/pages/Verification.jsx` — current verification tier, progress toward the
-  next one, and the phone number + SMS OTP flow
+- `src/pages/Verification.jsx` — current verification tier and progress
+  toward the next one
 - `src/lib/verification.js` — tier constants and the category gating map
   (which categories need `basic` to host/join)
 - `src/lib/supabaseClient.js` — Supabase setup + suggested table schema (as SQL comments)
@@ -51,11 +51,9 @@ still need to be.
      row (`id = auth.uid()`) — used by the profile edit screen and by the
      app's automatic profile-row creation on login
 3. Also run `supabase/migrations/0003_verification_tier.sql` (adds
-   `profiles.verification_tier`/`phone`/`phone_verified_at`, the phone
-   confirmation + automatic tier-upgrade functions, and the category
-   gating triggers). See "Verification tiers & phone auth" below — phone
-   verification needs a bit of manual setup in the Supabase dashboard
-   before it'll actually send SMS.
+   `profiles.verification_tier`, the automatic tier-upgrade functions, and
+   the category gating triggers) — see "Verification tiers" below. No
+   extra dashboard setup is needed for this one.
 4. Copy `.env.example` to `.env` and fill in your Supabase URL + anon key
    from Project Settings > API.
 5. Install dependencies and run:
@@ -67,39 +65,24 @@ still need to be.
 
 6. Open the local URL it prints (usually http://localhost:5173).
 
-## Verification tiers & phone auth
+## Verification tiers
 
-Layer 1 of the verification system: `profiles.verification_tier` is
-`unverified` (email only) → `basic` (phone confirmed) → `verified` (basic +
-2 completed activities with visible, good reviews — upgraded automatically,
-no action needed). Sport and Outdoors activities require `basic` to host or
-join, since they can be more physically remote or isolating; every other
-category stays open to a brand-new sign-up. See `src/lib/verification.js`
-for the category map and `supabase/migrations/0003_verification_tier.sql`
-for the full mechanics (tier transitions are locked to a handful of
-SECURITY DEFINER functions — a client can't just PATCH its own row to
-`verified`).
+Layer 1 of the verification system: `profiles.verification_tier` starts
+everyone at `basic` (signing in at all already proves email ownership via
+the magic-link flow, so there's no separate "unverified" state) and
+upgrades to `verified` automatically once someone has 2 completed
+activities with visible, good reviews — no action needed, no manual flag.
+Sport and Outdoors activities are gated to require `basic` to host or join;
+since that's everyone today, it's currently a no-op kept in place as
+future-proofing (e.g. for a tier introduced below `basic` later, or a
+category that ends up needing `verified` specifically). See
+`src/lib/verification.js` for the category map and
+`supabase/migrations/0003_verification_tier.sql` for the full mechanics
+(tier transitions are locked to a handful of SECURITY DEFINER functions —
+a client can't just PATCH its own row to `verified`).
 
-Phone verification uses Supabase's own phone auth (SMS OTP) rather than a
-separate SMS integration — but Supabase doesn't send SMS itself, so this
-needs one-time manual setup that isn't done by this PR:
-
-1. **A Twilio account** (or another SMS provider Supabase supports — Vonage
-   and MessageBird also work). Twilio is the most commonly used with
-   Supabase: create an account, buy a phone number capable of sending SMS,
-   and note the Account SID, Auth Token, and Messaging Service SID (or the
-   "From" number).
-2. **Enable phone auth in Supabase** — Authentication → Providers → Phone,
-   turn it on, choose Twilio as the SMS provider, and paste in the
-   credentials from step 1. "Confirm phone number" should stay on so an OTP
-   is required.
-3. Run `supabase/migrations/0003_verification_tier.sql` (see Setup above)
-   if you haven't already.
-
-Nothing else is required client-side — `src/pages/Verification.jsx` calls
-`supabase.auth.updateUser({ phone })` to send the code and
-`supabase.auth.verifyOtp({ phone, token, type: 'phone_change' })` to confirm
-it, both of which just need phone auth enabled as above.
+There's no phone/SMS step in this layer and nothing to configure in the
+Supabase dashboard for it.
 
 ## Email notifications
 
@@ -125,7 +108,7 @@ functions under `/api`. Setup is split across three places:
 ## Suggested next steps (best done in Claude Code)
 - Add the two-sided review screen after an activity
 - Layer 2+ of verification: government ID checks and live location sharing
-  on top of the email/phone/track-record tiers already in place
+  on top of the basic/verified tiers already in place
 - Add basic chat once a request is accepted
 - Style pass to match the ticket-stub visual identity from the prototype
 - Eventually: wrap as a mobile app (Capacitor or React Native) before

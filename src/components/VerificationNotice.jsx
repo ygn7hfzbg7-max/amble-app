@@ -14,7 +14,7 @@ export default function VerificationNotice({ category, requiredTier, action = "H
         <ShieldAlert size={18} color="var(--gold)" style={{ flexShrink: 0, marginTop: 1 }} />
         <p style={{ fontSize: 13, margin: 0 }}>
           {action} a {category} activity needs {TIER_LABELS[requiredTier]} verification — these can be more
-          physically remote or isolating, so we ask for a confirmed phone number first.
+          physically remote or isolating, so we ask for a bit more first.
         </p>
       </div>
       <button
