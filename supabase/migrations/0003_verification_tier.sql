@@ -21,6 +21,20 @@
 alter table profiles
   add column if not exists verification_tier text not null default 'basic';
 
+-- Cleanup from an earlier draft of this migration that included phone/SMS
+-- verification, dropped entirely per product decision (phone auth added
+-- setup overhead — Twilio, Supabase Auth config — for a step that doesn't
+-- clear the bar yet). Safe to run whether or not that earlier version was
+-- ever applied. Must run before the backfill below: on a database that
+-- already has profiles_verification_columns_locked installed, that trigger
+-- would otherwise still be active during the backfill update and reject it
+-- (it only allows verification_tier to change with
+-- amble.tier_change_allowed set, which a plain UPDATE doesn't set).
+drop function if exists confirm_phone_verification();
+drop trigger if exists profiles_verification_columns_locked on profiles;
+alter table profiles drop column if exists phone;
+alter table profiles drop column if exists phone_verified_at;
+
 -- Drop the constraint before backfilling so a database that already ran an
 -- earlier draft of this migration (which had 'unverified' as a value) can
 -- still update those rows before the tightened constraint goes back on.
@@ -30,16 +44,6 @@ alter table profiles alter column verification_tier set default 'basic';
 alter table profiles
   add constraint profiles_verification_tier_check
   check (verification_tier in ('basic', 'verified'));
-
--- Cleanup from an earlier draft of this migration that included phone/SMS
--- verification, dropped entirely per product decision (phone auth added
--- setup overhead — Twilio, Supabase Auth config — for a step that doesn't
--- clear the bar yet). Safe to run whether or not that earlier version was
--- ever applied.
-drop function if exists confirm_phone_verification();
-drop trigger if exists profiles_verification_columns_locked on profiles;
-alter table profiles drop column if exists phone;
-alter table profiles drop column if exists phone_verified_at;
 
 -- 2. Lock verification_tier to the SECURITY DEFINER function below. The
 -- existing "users can update their own profile" RLS policy is row-level
