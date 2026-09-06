@@ -1,13 +1,13 @@
 import React from "react";
-import { ShieldCheck } from "lucide-react";
+import { Check, ShieldCheck } from "lucide-react";
 
-// Small pill badge shown next to a person's name once they've built a
-// track record — same tag-pill styling as the review tags on
-// PublicProfile. Deliberately renders nothing for 'basic', which is the
-// default for almost everyone right now (everyone starts there): a badge
-// on every single name would just be noise, so it only shows up once
-// there's something to show.
+// Small pill badge shown next to a person's name — same tag-pill styling as
+// the review tags on PublicProfile. Every tier gets a badge: 'basic' (the
+// starting tier for everyone) gets a plain checkmark, 'verified' (basic + a
+// track record) gets the stronger shield in the same moss color used
+// elsewhere for trust signals.
 const TIER_META = {
+  basic: { label: "Basic", icon: Check, color: "var(--muted)" },
   verified: { label: "Verified", icon: ShieldCheck, color: "var(--moss)" },
 };
 

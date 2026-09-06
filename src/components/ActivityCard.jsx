@@ -93,7 +93,7 @@ export default function ActivityCard({ activity, spotsLeft, isFull, isOwn, dista
 
       {host && (
         <div className="listing-hairline" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, flexWrap: "wrap" }}>
             <Avatar src={host.avatar_url} name={host.display_name} seed={activity.host_id} size={20} />
             <span style={{ fontSize: 12, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {displayName(host)}
