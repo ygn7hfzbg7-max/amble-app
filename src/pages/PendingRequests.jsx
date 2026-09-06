@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import Avatar from "../components/Avatar.jsx";
 import RatingSummary from "../components/RatingSummary.jsx";
+import TierBadge from "../components/TierBadge.jsx";
 import { displayName } from "../lib/profileDisplay";
 import { fetchRatingSummaries } from "../lib/reviews";
 import { formatDateTime } from "../lib/formatDateTime";
@@ -68,7 +69,7 @@ export default function PendingRequests() {
 
         const { data, error: requestsError } = await supabase
           .from("requests")
-          .select("*, profiles(display_name, avatar_url, city, bio), activities(title, starts_at, meet_point, spots_total)")
+          .select("*, profiles(display_name, avatar_url, city, bio, verification_tier), activities(title, starts_at, meet_point, spots_total)")
           .in("activity_id", hostedIds)
           .in("status", ["pending", "waitlisted"])
           .order("created_at", { ascending: true });
@@ -140,8 +141,9 @@ export default function PendingRequests() {
             <div style={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {name}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2, flexWrap: "wrap" }}>
               <RatingSummary summary={ratings[r.traveller_id]} size={10} />
+              <TierBadge tier={profile.verification_tier} size={10} />
               {profile.city && (
                 <span className="mono" style={{ fontSize: 11, color: "var(--muted)" }}>{profile.city}</span>
               )}

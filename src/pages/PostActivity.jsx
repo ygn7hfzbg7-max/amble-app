@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
@@ -6,7 +6,9 @@ import ErrorBanner from "../components/ErrorBanner.jsx";
 import LocationPicker from "../components/LocationPicker.jsx";
 import CategoryPicker from "../components/CategoryPicker.jsx";
 import CurrencySelector from "../components/CurrencySelector.jsx";
+import VerificationNotice from "../components/VerificationNotice.jsx";
 import { DEFAULT_CURRENCY, currencyForCountry } from "../lib/currency";
+import { requiredTierFor, meetsTier, friendlyVerificationError } from "../lib/verification";
 
 export default function PostActivity() {
   const navigate = useNavigate();
@@ -24,6 +26,23 @@ export default function PostActivity() {
   const [currencyTouched, setCurrencyTouched] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [myTier, setMyTier] = useState("basic");
+
+  useEffect(() => {
+    (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user?.id) return;
+      const { data, error: tierError } = await supabase
+        .from("profiles")
+        .select("verification_tier")
+        .eq("id", userData.user.id)
+        .single();
+      if (!tierError) setMyTier(data?.verification_tier || "basic");
+    })();
+  }, []);
+
+  const requiredTier = requiredTierFor(form.type);
+  const blockedByTier = Boolean(requiredTier) && !meetsTier(myTier, requiredTier);
 
   const update = (key) => (e) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -42,6 +61,7 @@ export default function PostActivity() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (blockedByTier) return;
     setError("");
     setSubmitting(true);
     try {
@@ -59,7 +79,7 @@ export default function PostActivity() {
         longitude: location?.longitude ?? null,
         host_id: userData.user.id,
       });
-      if (error) setError(error.message);
+      if (error) setError(friendlyVerificationError(error.message));
       else navigate("/");
     } catch (err) {
       setError(err.message || "Couldn't post this activity. Please try again.");
@@ -84,7 +104,13 @@ export default function PostActivity() {
         <input placeholder="Title" value={form.title} onChange={update("title")} required />
 
         <label className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>Category</label>
-        <CategoryPicker value={form.type} onChange={(type) => setForm((f) => ({ ...f, type }))} />
+        <CategoryPicker value={form.type} onChange={(type) => setForm((f) => ({ ...f, type }))} userTier={myTier} />
+
+        {blockedByTier && (
+          <div style={{ marginBottom: 14 }}>
+            <VerificationNotice category={form.type} requiredTier={requiredTier} action="Hosting" />
+          </div>
+        )}
 
         <textarea placeholder="Description" value={form.description} onChange={update("description")} rows={3} />
 
@@ -118,7 +144,7 @@ export default function PostActivity() {
         </div>
 
         <ErrorBanner message={error} />
-        <button className="btn-primary" type="submit" disabled={submitting}>
+        <button className="btn-primary" type="submit" disabled={submitting || blockedByTier}>
           {submitting ? "Posting…" : "Post activity"}
         </button>
       </form>
