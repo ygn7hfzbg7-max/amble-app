@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Send } from "lucide-react";
+import { ChevronLeft, Send, Flag, LifeBuoy } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import Avatar from "../components/Avatar.jsx";
+import ReportPanel from "../components/ReportPanel.jsx";
+import GetHelpPanel from "../components/GetHelpPanel.jsx";
 import { displayName } from "../lib/profileDisplay";
 import { formatChatTimestamp } from "../lib/formatDateTime";
 
@@ -19,6 +21,7 @@ export default function ChatThread() {
   const [sendError, setSendError] = useState("");
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [activePanel, setActivePanel] = useState(null); // null | 'report' | 'help'
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -184,6 +187,70 @@ export default function ChatThread() {
           </div>
         </div>
       </div>
+
+      <div style={{ padding: "12px 20px 0", display: "flex", gap: 8, flexShrink: 0 }}>
+        <button
+          type="button"
+          className="mono"
+          onClick={() => setActivePanel((p) => (p === "report" ? null : "report"))}
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            background: "none",
+            border: "1px solid var(--border)",
+            borderRadius: 10,
+            padding: "8px 10px",
+            fontSize: 12,
+            fontWeight: 600,
+            color: "var(--ink)",
+            cursor: "pointer",
+          }}
+        >
+          <Flag size={14} /> Report
+        </button>
+        <button
+          type="button"
+          className="mono"
+          onClick={() => setActivePanel((p) => (p === "help" ? null : "help"))}
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            background: "none",
+            border: "1px solid var(--brick)",
+            borderRadius: 10,
+            padding: "8px 10px",
+            fontSize: 12,
+            fontWeight: 600,
+            color: "var(--brick)",
+            cursor: "pointer",
+          }}
+        >
+          <LifeBuoy size={14} /> Get help
+        </button>
+      </div>
+
+      {activePanel === "report" && (
+        <div style={{ padding: "12px 20px 0", flexShrink: 0 }}>
+          <ReportPanel
+            activityId={activityId}
+            reporterId={userId}
+            reportedUserId={otherId}
+            onClose={() => setActivePanel(null)}
+          />
+        </div>
+      )}
+
+      {activePanel === "help" && (
+        <div style={{ padding: "12px 20px 0", flexShrink: 0 }}>
+          <GetHelpPanel onClose={() => setActivePanel(null)} />
+        </div>
+      )}
 
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
         {messages.length === 0 && (
