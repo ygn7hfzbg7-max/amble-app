@@ -15,6 +15,7 @@ import { getAdminClient } from "./_lib/db.js";
 import { sendEmail, emailShell } from "./_lib/email.js";
 import { siteUrl } from "./_lib/siteUrl.js";
 import { formatDateTime } from "../src/lib/formatDateTime.js";
+import { reportReasonLabel } from "../src/lib/reports.js";
 
 const CHAT_DEBOUNCE_MS = 15 * 60 * 1000;
 
@@ -39,6 +40,8 @@ export default async function handler(req, res) {
       await handleMessageEvent({ type, record });
     } else if (table === "activities") {
       await handleActivityEvent({ type, record, old_record });
+    } else if (table === "reports") {
+      await handleReportEvent({ type, record });
     }
   } catch (err) {
     console.error("send-notification handler failed:", err);
@@ -324,4 +327,50 @@ async function shouldSendChatNotification(db, record) {
   }
 
   return false;
+}
+
+// Reports have no in-app admin view — this is the only place they go.
+// Deliberately doesn't route through getNotifiableProfile: this email is
+// for REPORT_NOTIFICATION_EMAIL (the app operator), not the reported
+// user, so a reporter or reported party's own notifications_enabled
+// preference is irrelevant here.
+async function handleReportEvent({ type, record }) {
+  if (type !== "INSERT" || !record) return;
+
+  const to = process.env.REPORT_NOTIFICATION_EMAIL;
+  if (!to) {
+    console.error("REPORT_NOTIFICATION_EMAIL is not set — skipping report notification email.");
+    return;
+  }
+
+  const db = getAdminClient();
+  const [{ data: activity }, { data: reporter }, { data: reported }] = await Promise.all([
+    db.from("activities").select("title").eq("id", record.activity_id).single(),
+    db.from("profiles").select("display_name, email").eq("id", record.reporter_id).single(),
+    db.from("profiles").select("display_name, email").eq("id", record.reported_user_id).single(),
+  ]);
+
+  const reasonLabel = reportReasonLabel(record.reason);
+  const activityLabel = activity?.title || record.activity_id;
+  const reporterLabel = `${reporter?.display_name?.trim() || "Unknown"}${reporter?.email ? ` (${reporter.email})` : ""}`;
+  const reportedLabel = `${reported?.display_name?.trim() || "Unknown"}${reported?.email ? ` (${reported.email})` : ""}`;
+
+  const body = [
+    `Reason: ${reasonLabel}.`,
+    `Reporter: ${reporterLabel}.`,
+    `Reported: ${reportedLabel}.`,
+    `Activity: ${activityLabel}.`,
+    record.details ? `Details: ${record.details}` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  await sendEmail({
+    to,
+    subject: `New report: ${reasonLabel} — ${activityLabel}`,
+    html: emailShell({
+      heading: "New report submitted",
+      body,
+    }),
+  });
 }

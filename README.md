@@ -26,6 +26,10 @@ sharing) still need to be.
 - `src/pages/EditProfile.jsx` — set display name, city, and bio
 - `src/pages/Verification.jsx` — current verification tier and progress
   toward the next one
+- `src/pages/ChatThread.jsx` — 1:1 chat for a confirmed match; also hosts the
+  "Report" and "Get help" quick actions (`src/components/ReportPanel.jsx`,
+  `src/components/GetHelpPanel.jsx`), both only reachable once a request is
+  accepted
 - `src/lib/verification.js` — tier constants and the category gating map
   (which categories need `basic` to host/join)
 - `src/lib/supabaseClient.js` — Supabase setup + suggested table schema (as SQL comments)
@@ -54,16 +58,19 @@ sharing) still need to be.
    `profiles.verification_tier`, the automatic tier-upgrade functions, and
    the category gating triggers) — see "Verification tiers" below. No
    extra dashboard setup is needed for this one.
-4. Copy `.env.example` to `.env` and fill in your Supabase URL + anon key
+4. Also run `supabase/migrations/0004_reports.sql` (adds the `reports`
+   table for the report/flag feature) — see "Report a concern" below for
+   the accompanying webhook + env var setup.
+5. Copy `.env.example` to `.env` and fill in your Supabase URL + anon key
    from Project Settings > API.
-5. Install dependencies and run:
+6. Install dependencies and run:
 
    ```
    npm install
    npm run dev
    ```
 
-6. Open the local URL it prints (usually http://localhost:5173).
+7. Open the local URL it prints (usually http://localhost:5173).
 
 ## Verification tiers
 
@@ -103,7 +110,39 @@ functions under `/api`. Setup is split across three places:
    see the full step-by-step in the PR description for this feature. The
    webhook posting to `/api/send-notification.js` needs to cover UPDATE
    events on `activities` too (not just `requests`/`messages`) so hosts'
-   title/description edits notify already-accepted participants.
+   title/description edits notify already-accepted participants, and an
+   INSERT trigger on `reports` (see "Report a concern" below) for the
+   report notification email.
+
+## Report a concern
+
+Once a request is accepted, both the host and the confirmed traveller see
+"Report" and "Get help" on their chat thread (`src/pages/ChatThread.jsx`) —
+two separate, clearly-labeled actions, not one combined button.
+
+- **Report** (`src/components/ReportPanel.jsx`) opens a short form — a
+  reason (No-show, Felt unsafe, Inappropriate behavior, Other) plus
+  optional free-text details — and inserts a row into `reports`
+  (`supabase/migrations/0004_reports.sql`). That table is insert-only from
+  the client: there's no select policy, so a submitted report is only ever
+  readable via direct Supabase access (service role or the SQL editor),
+  never through the app. There's also no in-app admin view — the only
+  place a report goes is an email, sent through the same
+  Database-Webhook-into-`/api/send-notification.js`-via-Resend pipeline as
+  every other notification, to whatever address is set as
+  `REPORT_NOTIFICATION_EMAIL`. **Manual setup needed:** add an INSERT
+  webhook on `reports` (same target URL as the others) and set
+  `REPORT_NOTIFICATION_EMAIL` in your environment — see `.env.example`.
+  After submitting, the user just sees "Thanks — we've received your
+  report", not a promise of investigation or a response-time commitment
+  the app can't back up.
+- **Get help** (`src/components/GetHelpPanel.jsx`) shows a one-tap "Call"
+  action for the local emergency number, guessed from the browser's
+  geolocation + a reverse-geocode lookup (999 UK, 112 EU, 911 US, 112 as
+  the international fallback when location isn't available or is outside
+  those regions — see `src/lib/emergencyNumber.js`). It's clearly labeled
+  as a shortcut to standard emergency services only — nothing implies
+  Amble is monitoring the chat, alerting anyone, or dispatching help.
 
 ## Suggested next steps (best done in Claude Code)
 - Add the two-sided review screen after an activity

@@ -144,6 +144,25 @@ export async function ensureProfile(user) {
     them is "accepted"; see the SQL migration for the exact table + RLS
     policies this app relies on.
 
+  reports
+    id                  uuid primary key default gen_random_uuid()
+    reporter_id         uuid references profiles.id
+    reported_user_id    uuid references profiles.id
+    activity_id         uuid references activities.id
+    reason              text  -- no_show | felt_unsafe | inappropriate_behavior | other
+    details             text  -- optional free text
+    created_at          timestamptz default now()
+
+    Filed from the "Report" action on an active match's chat thread
+    (src/pages/ChatThread.jsx / src/components/ReportPanel.jsx) — only
+    between two people an accepted request actually matched on that
+    activity. Insert-only from the client: there is deliberately no select
+    policy, so reports are never readable through the app, only via direct
+    Supabase access. Submitting one emails REPORT_NOTIFICATION_EMAIL
+    through the same webhook -> Resend pipeline as the rest of the
+    notification emails; see supabase/migrations/0004_reports.sql and the
+    "Report a concern" section in the README.
+
   Enable Row Level Security on all tables and add policies so:
   - anyone can read activities
   - only the host can insert/update their own activities (the
@@ -179,12 +198,16 @@ export async function ensureProfile(user) {
     (host <-> that confirmed traveller — nobody else)
   - a user can update only the read_at column, and only on messages sent
     to them (marking a thread as read)
+  - a user can insert a report only as its reporter, about the other
+    confirmed party on that activity (host <-> that accepted traveller —
+    nobody else) — and NO select policy at all, so reports are write-only
+    from the client; see supabase/migrations/0004_reports.sql
 
   Email notifications (new join request, request accepted/declined, new
-  chat message, review reminder) are sent by serverless functions under
-  /api, triggered by Supabase Database Webhooks on requests/messages and a
-  Vercel Cron sweep for review reminders — see
-  supabase/migrations/0001_notifications.sql for the two extra tables that
-  back debouncing/dedup, and the PR description for the exact webhook
+  chat message, review reminder, new report) are sent by serverless
+  functions under /api, triggered by Supabase Database Webhooks on
+  requests/messages/reports and a Vercel Cron sweep for review reminders —
+  see supabase/migrations/0001_notifications.sql for the two extra tables
+  that back debouncing/dedup, and the PR description for the exact webhook
   setup steps.
 */
