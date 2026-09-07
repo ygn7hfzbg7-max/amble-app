@@ -7,7 +7,6 @@ import ActivityDetail from "./pages/ActivityDetail.jsx";
 import ActivityRequests from "./pages/ActivityRequests.jsx";
 import PostActivity from "./pages/PostActivity.jsx";
 import EditActivity from "./pages/EditActivity.jsx";
-import Profile from "./pages/Profile.jsx";
 import EditProfile from "./pages/EditProfile.jsx";
 import Verification from "./pages/Verification.jsx";
 import PublicProfile from "./pages/PublicProfile.jsx";
@@ -87,7 +86,7 @@ export default function App() {
           />
           <Route
             path="/profile"
-            element={session ? <Profile /> : <Navigate to="/login" />}
+            element={session ? <PublicProfile /> : <Navigate to="/login" />}
           />
           <Route
             path="/profile/edit"

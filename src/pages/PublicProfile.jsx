@@ -11,6 +11,7 @@ import TierBadge from "../components/TierBadge.jsx";
 import { displayName, memberSince } from "../lib/profileDisplay";
 import { formatDateTime } from "../lib/formatDateTime";
 
+// No :userId param means the route is "/profile" — the signed-in user's own.
 const SECTION_HEADING_STYLE = {
   fontSize: 14,
   textTransform: "uppercase",
@@ -21,10 +22,11 @@ const SECTION_HEADING_STYLE = {
 };
 
 export default function PublicProfile() {
-  const { userId } = useParams();
+  const { userId: routeUserId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [profile, setProfile] = useState(null);
+  const [viewerId, setViewerId] = useState(null);
   const [hostedActivities, setHostedActivities] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loadError, setLoadError] = useState("");
@@ -37,6 +39,12 @@ export default function PublicProfile() {
       setLoading(true);
       setLoadError("");
       try {
+        const { data: authData } = await supabase.auth.getUser();
+        const currentUserId = authData.user?.id || null;
+        if (!cancelled) setViewerId(currentUserId);
+
+        const userId = routeUserId || currentUserId;
+
         const { data, error } = await supabase
           .from("profiles")
           .select("id, display_name, city, bio, languages, avatar_url, created_at, verification_tier")
@@ -98,12 +106,19 @@ export default function PublicProfile() {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [routeUserId]);
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) setLoadError(error.message);
+    else navigate("/login");
+  };
 
   if (loading) return <div style={{ padding: 24 }}>Loading…</div>;
   if (loadError) return <div style={{ padding: 24 }}><ErrorBanner message={loadError} /></div>;
   if (!profile) return <div style={{ padding: 24 }}><ErrorBanner message="This profile couldn't be found." /></div>;
 
+  const isOwnProfile = !!viewerId && viewerId === profile.id;
   const name = displayName(profile);
   const since = memberSince(profile.created_at);
   const ratingSummary =
@@ -129,7 +144,10 @@ export default function PublicProfile() {
           </h1>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
             <RatingSummary summary={ratingSummary} size={12} />
-            <TierBadge tier={profile.verification_tier} />
+            <TierBadge
+              tier={profile.verification_tier}
+              onClick={isOwnProfile ? () => navigate("/verification") : undefined}
+            />
           </div>
           {profile.city && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--muted)", fontSize: 13, marginBottom: 2 }}>
@@ -230,6 +248,19 @@ export default function PublicProfile() {
             hostRating={ratingSummary}
           />
         ))
+      )}
+
+      {isOwnProfile && (
+        <>
+          <button
+            className="btn-secondary"
+            style={{ marginTop: 24, marginBottom: 12 }}
+            onClick={() => navigate("/profile/edit")}
+          >
+            Edit profile
+          </button>
+          <button className="btn-secondary" onClick={handleSignOut}>Sign out</button>
+        </>
       )}
     </div>
   );
