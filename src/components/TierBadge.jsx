@@ -11,13 +11,15 @@ const TIER_META = {
   verified: { label: "Verified", icon: ShieldCheck, color: "var(--moss)" },
 };
 
-export default function TierBadge({ tier, size = 11 }) {
+export default function TierBadge({ tier, size = 11, onClick }) {
   const meta = TIER_META[tier];
   if (!meta) return null;
   const Icon = meta.icon;
+  const Tag = onClick ? "button" : "span";
   return (
-    <span
+    <Tag
       className="mono"
+      onClick={onClick}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -25,15 +27,17 @@ export default function TierBadge({ tier, size = 11 }) {
         fontSize: size,
         fontWeight: 600,
         color: meta.color,
+        background: "none",
         border: `1px solid ${meta.color}`,
         borderRadius: 999,
         padding: "1px 7px",
         flexShrink: 0,
         whiteSpace: "nowrap",
+        cursor: onClick ? "pointer" : undefined,
       }}
     >
       <Icon size={size} />
       {meta.label}
-    </span>
+    </Tag>
   );
 }
