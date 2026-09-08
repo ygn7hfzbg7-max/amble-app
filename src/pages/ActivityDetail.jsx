@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ChevronLeft, MessageCircle, Pencil } from "lucide-react";
+import { ChevronLeft, MessageCircle, Pencil, Flag } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import ErrorBanner from "../components/ErrorBanner.jsx";
 import ErrorBoundary from "../components/ErrorBoundary.jsx";
 import ActivityMap from "../components/ActivityMap.jsx";
 import ShareButton from "../components/ShareButton.jsx";
 import Avatar from "../components/Avatar.jsx";
+import ReportPanel from "../components/ReportPanel.jsx";
 import RatingSummary from "../components/RatingSummary.jsx";
 import TierBadge from "../components/TierBadge.jsx";
 import VerificationNotice from "../components/VerificationNotice.jsx";
@@ -36,6 +37,7 @@ export default function ActivityDetail() {
   const [hostRating, setHostRating] = useState(null);
   const [attendeeRatings, setAttendeeRatings] = useState({});
   const [myTier, setMyTier] = useState("basic");
+  const [showReport, setShowReport] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -422,6 +424,39 @@ export default function ActivityDetail() {
                   {withdrawing ? "Withdrawing…" : "Withdraw"}
                 </button>
               </div>
+              <button
+                type="button"
+                className="mono"
+                onClick={() => setShowReport((v) => !v)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  background: "none",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  padding: "8px 10px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "var(--ink)",
+                  cursor: "pointer",
+                  marginTop: 8,
+                  width: "100%",
+                }}
+              >
+                <Flag size={14} /> Report
+              </button>
+              {showReport && activity.host_id && (
+                <div style={{ marginTop: 12 }}>
+                  <ReportPanel
+                    activityId={id}
+                    reporterId={userId}
+                    reportedUserId={activity.host_id}
+                    onClose={() => setShowReport(false)}
+                  />
+                </div>
+              )}
             </>
           )}
           {myRequestStatus === "pending" && (
